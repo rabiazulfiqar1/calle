@@ -56,6 +56,18 @@ export const relayMessageDetailsSchema = z.object({
   locationConsent: z.boolean(),
 });
 
+export const vendorSchema = z.object({
+  businessName: z.string().min(1).max(80),
+  contact: recipientSchema,   // reuses phone + region + locale validation
+});
+
+export const vendorComparisonDetailsSchema = z.object({
+  service: z.string().min(1).max(200),
+  fieldsToAsk: z.array(z.string().min(1).max(80)).min(1).max(6),
+  preferredTiming: z.string().max(100).optional(),
+  vendors: z.array(vendorSchema).min(2).max(5),
+});
+
 export interface Template<TDetails> {
   id: string;
   label: string;

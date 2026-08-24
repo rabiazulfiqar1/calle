@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CalleClient } from "@call-e/calle";
 import { templates, recipientSchema, userInfoSchema } from "../../../lib/templates";
+import {handleVendorComparisonRequest} from "../../../lib/templates/vendorComparison";
 import fs from "fs/promises";
 import path from "path";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+
+  if (body.templateId === "vendor_comparison") {
+    return handleVendorComparisonRequest(body);
+  }
+
   const template = templates[body.templateId as keyof typeof templates];
 
   if (!template) {
