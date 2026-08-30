@@ -9,6 +9,7 @@
  *
  * Re-run this if a route ever tells you the token was rejected/expired.
  */
+import "dotenv/config";
 import { getCachedTokenOrStartLogin, waitForBrokerLogin } from "../lib/mcp/brokerclient";
 
 async function main() {

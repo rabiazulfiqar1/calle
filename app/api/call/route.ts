@@ -1,17 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CalleClient } from "@call-e/calle";
 import { templates, recipientSchema, userInfoSchema } from "../../../lib/templates";
-import {handleVendorComparisonRequest} from "../../../lib/templates/vendorComparison";
+import { getUserId } from "@/lib/auth/getUserId";
+import { checkCallQuota } from "@/lib/ratelimit";
 import fs from "fs/promises";
 import path from "path";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-
-  if (body.templateId === "vendor_comparison") {
-    return handleVendorComparisonRequest(body);
+  const userId = await getUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  // Templates place a REAL call — same shared quota as place-call.
+  const quota = await checkCallQuota(userId);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: `Daily call limit reached (${quota.limit}/day). Resets at ${new Date(quota.resetAt).toLocaleString()}.`,
+      },
+      { status: 429 }
+    );
+  }
+
+  const body = await req.json();
   const template = templates[body.templateId as keyof typeof templates];
 
   if (!template) {
@@ -48,9 +60,9 @@ export async function POST(req: NextRequest) {
         JSON.stringify(call, null, 2)
     );
 
-    return NextResponse.json({ result: call });
+    return NextResponse.json({ result: call, quotaRemaining: quota.remaining });
   } catch (err) {
-    
+
     await fs.writeFile(
         path.join(process.cwd(), "tmp-call-error.json"),
         JSON.stringify({ error: String(err) }, null, 2)

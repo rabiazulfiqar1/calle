@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callCalleTool } from "@/lib/mcp/brokerclient";
+import { getUserId } from "@/lib/auth/getUserId";
+import { checkPlanRateLimit } from "@/lib/ratelimit";
 
 // Body: { user_input, to_phones?, region?, language?, goal?, plan_id?, scheduled_at? }
 export async function POST(request: NextRequest) {
   try {
+    const userId = await getUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Planning doesn't dial — rate limit only, not quota.
+    const limit = await checkPlanRateLimit(userId);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Too many requests. Try again after ${new Date(limit.resetAt).toLocaleTimeString()}.` },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const args: Record<string, unknown> = { user_input: body.user_input };
 

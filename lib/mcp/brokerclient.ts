@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createAdminClient } from "../supabase/admin";
 
 const DEFAULT_BASE_URL = "https://seleven-mcp-sg.airudder.com";
 const DEFAULT_CHANNEL = "openagent_oauth";
@@ -87,12 +88,50 @@ function serverHash(serverUrl: string) {
   return crypto.createHash("md5").update(serverUrl, "utf8").digest("hex");
 }
 
-function tokenCachePath(config: Config) {
-  return path.join(config.cacheRoot, serverHash(config.serverUrl), "token.json");
-}
-
 function pendingCachePath(config: Config) {
   return path.join(config.cacheRoot, serverHash(config.serverUrl), "pending_login.json");
+}
+
+/**
+ * TOKEN storage — this is the piece that must survive across ephemeral
+ * serverless instances, so it lives in Supabase (one shared row), not a
+ * local file. Uses the admin client (service role key) since this table
+ * has RLS enabled with no policies — only server-side privileged access
+ * can touch it.
+ */
+async function readTokenFromDb(): Promise<Record<string, unknown> | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("calle_broker_token")
+    .select("token, expires_at")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) {
+    console.error("readTokenFromDb error:", error);
+    return null;
+  }
+  if (!data) return null;
+  return { token: data.token, expires_at: data.expires_at };
+}
+
+async function writeTokenToDb(payload: Record<string, unknown>): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("calle_broker_token").upsert({
+    id: 1,
+    token: payload.token,
+    expires_at: payload.expires_at ?? null,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) {
+    console.error("writeTokenToDb error:", error);
+    throw new Error(`Failed to save token to database: ${error.message}`);
+  }
+}
+
+async function clearTokenInDb(): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("calle_broker_token").delete().eq("id", 1);
+  if (error) console.error("clearTokenInDb error:", error);
 }
 
 function readJson(filePath: string): Record<string, unknown> | null {
@@ -236,8 +275,7 @@ export async function getCachedTokenOrStartLogin(): Promise<
   | { loginRequired: true; loginUrl: string }
 > {
   const config = readConfig();
-  const cachePath = tokenCachePath(config);
-  const cached = readJson(cachePath);
+  const cached = await readTokenFromDb();
   if (tokenIsUsable(cached, config.minTtlSeconds)) {
     return { loginRequired: false, token: cached as Record<string, unknown> };
   }
@@ -256,7 +294,6 @@ export async function getCachedTokenOrStartLogin(): Promise<
 export async function waitForBrokerLogin(): Promise<Record<string, unknown>> {
   const config = readConfig();
   const pendingPath = pendingCachePath(config);
-  const cachePath = tokenCachePath(config);
 
   let pending = normalizePendingLogin(readJson(pendingPath));
   if (!pending) throw new Error("No pending login found — call getCachedTokenOrStartLogin() first.");
@@ -275,7 +312,7 @@ export async function waitForBrokerLogin(): Promise<Record<string, unknown>> {
 
     if (pending.status === "AUTHORIZED") {
       const exchanged = await exchangeBrokerSession(config, pending);
-      writePrivateJson(cachePath, exchanged);
+      await writeTokenToDb(exchanged);
       removeFile(pendingPath);
       return exchanged;
     }
@@ -288,9 +325,9 @@ export async function waitForBrokerLogin(): Promise<Record<string, unknown>> {
   throw new Error("Timed out waiting for brokered login authorization.");
 }
 
-export function clearBrokerState() {
+export async function clearBrokerState() {
   const config = readConfig();
-  removeFile(tokenCachePath(config));
+  await clearTokenInDb();
   removeFile(pendingCachePath(config));
 }
 
@@ -410,7 +447,7 @@ export async function callCalleTool(toolName: string, args: Record<string, unkno
     return await attempt(cachedSession);
   } catch (error) {
     if (error instanceof McpHttpError && error.code === "auth_required") {
-      clearBrokerState();
+      await clearBrokerState();
       cachedSession = null;
       throw new Error("CALL-E rejected the cached token. Run the setup script again: npx tsx scripts/calle-mcp-login.ts");
     }
