@@ -32,8 +32,9 @@ export async function POST(request: NextRequest) {
 
     const result = await callCalleTool("plan_call", args);
     return NextResponse.json({ result });
-  } catch (error: unknown) {
+  }catch (error: unknown) {
+    console.error("plan_call failed:", error);
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: message }, { status: 502 });
-  }
+  } 
 }

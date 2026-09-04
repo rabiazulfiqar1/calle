@@ -3,8 +3,7 @@ import { CalleClient } from "@call-e/calle";
 import { templates, recipientSchema, userInfoSchema } from "../../../lib/templates";
 import { getUserId } from "@/lib/auth/getUserId";
 import { checkCallQuota } from "@/lib/ratelimit";
-import fs from "fs/promises";
-import path from "path";
+import { createCallRecord } from "@/lib/calle/callStore";
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId();
@@ -12,7 +11,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Templates place a REAL call — same shared quota as place-call.
   const quota = await checkCallQuota(userId);
   if (!quota.allowed) {
     return NextResponse.json(
@@ -25,7 +23,6 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const template = templates[body.templateId as keyof typeof templates];
-
   if (!template) {
     return NextResponse.json({ error: "Unknown template" }, { status: 400 });
   }
@@ -42,10 +39,11 @@ export async function POST(req: NextRequest) {
   }
 
   const client = new CalleClient({ apiKey: process.env.CALLE_API_KEY! });
+  const task = template.buildTask(details.data, user.data ?? {});
 
   try {
-    const call = await client.calls.createAndWait({
-      task: template.buildTask(details.data, user.data ?? {}),
+    const call = await client.calls.create({
+      task,
       recipients: [{
         phones: [recipient.data.phone],
         region: recipient.data.region,
@@ -53,20 +51,23 @@ export async function POST(req: NextRequest) {
       }],
       resultSchema: template.resultSchema,
       recipientResultSchema: template.recipientResultSchema,
+      webhookUrl: `${process.env.APP_BASE_URL}/api/calle/webhook`,
+      metadata: { userId, templateId: body.templateId },
     });
 
-    await fs.writeFile(
-        path.join(process.cwd(), "tmp-call-result.json"),
-        JSON.stringify(call, null, 2)
-    );
+    await createCallRecord({
+      callId: call.id,
+      userId,
+      status: "queued",
+      task,
+      templateId: body.templateId,
+      result: null,
+      error: null,
+    });
 
-    return NextResponse.json({ result: call, quotaRemaining: quota.remaining });
+    return NextResponse.json({ callId: call.id, quotaRemaining: quota.remaining });
   } catch (err) {
-
-    await fs.writeFile(
-        path.join(process.cwd(), "tmp-call-error.json"),
-        JSON.stringify({ error: String(err) }, null, 2)
-    );
+    console.error("template call failed:", err);
     return NextResponse.json({ error: String(err) }, { status: 502 });
   }
 }
