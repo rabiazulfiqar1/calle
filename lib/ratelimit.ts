@@ -25,7 +25,7 @@ const planLimiter = new Ratelimit({
  */
 const callQuota = new Ratelimit({
   redis,
-  limiter: Ratelimit.fixedWindow(100, "1 d"),
+  limiter: Ratelimit.fixedWindow(5, "1 d"),
   prefix: "quota:calls",
   analytics: true,
 });
