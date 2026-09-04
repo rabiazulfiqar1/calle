@@ -4,12 +4,27 @@ import { NextResponse, type NextRequest } from "next/server";
 // Routes that DON'T require a signed-in user.
 const PUBLIC_PATHS = ["/login", "/signup", "/auth/callback"];
 
+// API routes that are called by EXTERNAL, unauthenticated services
+// (e.g. CALL-E's webhook) rather than by our own logged-in users.
+const PUBLIC_API_PATHS = ["/api/calle/webhook"];
+
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+function isPublicApiPath(pathname: string) {
+  return PUBLIC_API_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  const { pathname } = request.nextUrl;
+
+  // Skip auth entirely for external webhook callers.
+  if (isPublicApiPath(pathname)) {
+    return response;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,11 +49,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
   if (!user && !isPublicPath(pathname)) {
-    // API routes get a clean 401 JSON response, not a redirect —
-    // fetch() callers need a status code, not an HTML login page.
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
@@ -52,7 +63,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Run on everything except static assets and Next internals.
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

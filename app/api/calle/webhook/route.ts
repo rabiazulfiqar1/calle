@@ -24,14 +24,7 @@ export async function POST(request: NextRequest) {
   const data = event.data;
   const callId: string = data.id;
 
-  if (event.type === "call.completed") {
-    await updateCallRecord(callId, {
-      status: "completed",
-      result: data,
-      error: null,
-    });
-  } else if (event.type === "call.result_validation_failed") {
-    // Call completed, but structured_result may be null due to schema mismatch.
+  if (event.type === "call.completed" || event.type === "call.result_validation_failed") {
     await updateCallRecord(callId, {
       status: "completed",
       result: data,
