@@ -1,6 +1,9 @@
-# CALL-E: Accessibility Voice Proxy
+# YourVoice: Accessibility Voice Proxy
 > **Empowering Deaf and speech-impaired individuals to make real-world phone calls with autonomy, dignity, and complete transparency.**
 
+🌐 **Live Application:** [https://calle-coral.vercel.app/](https://calle-coral.vercel.app/)
+
+[![Live Demo](https://img.shields.io/badge/Live_Deployment-call--e.vercel.app-000000?style=flat-square&logo=vercel)](https://calle-coral.vercel.app/)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16.3.2-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19.2-61DAFB?style=flat-square&logo=react)](https://react.dev/)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
@@ -51,49 +54,7 @@ For **Deaf, hard-of-hearing, and speech-impaired individuals**, this creates an 
 
 ## 🏗️ Architecture / How It Works
 
-```mermaid
-flowchart TD
-    subgraph Client ["Client Interface (Next.js 16 App)"]
-        UI["User Dashboard & Forms"]
-        AuthUI["Supabase Auth (Sign In / Sign Up)"]
-        PhoneComp["PhoneInput (Country Flag & Dial Code Sync)"]
-    end
-
-    subgraph SecurityGateway ["Edge & Middleware"]
-        Proxy["Next.js proxy.ts (Auth Guard & Session Validation)"]
-        RateLimit["Upstash Redis (Plan Rate Limits & Daily Call Quota)"]
-    end
-
-    subgraph BackendServices ["Backend Route Handlers"]
-        PlanRoute["/api/mcp/plan-call"]
-        CallRoute["/api/call & /api/calle/place-call"]
-        WebhookRoute["/api/calle/webhook"]
-        StatusRoute["/api/calle/call-status"]
-        CallStore["Upstash CallStore (Idempotent Event Cache)"]
-    end
-
-    subgraph AI_Ecosystem ["Voice & Intelligence Layer"]
-        MCP["CALL-E MCP Server (plan_call tool)"]
-        CalleSDK["CALL-E SDK (@call-e/calle)"]
-        Gemini["Google Gemini 3.6 Flash (Vendor Analysis)"]
-        TelcoNetwork["Real-Time Telephony & Speech Agent"]
-    end
-
-    UI --> Proxy
-    Proxy --> AuthUI
-    Proxy --> RateLimit
-    RateLimit --> PlanRoute
-    RateLimit --> CallRoute
-
-    PlanRoute --> MCP
-    CallRoute --> CalleSDK
-    CalleSDK --> TelcoNetwork
-    TelcoNetwork --> WebhookRoute
-    WebhookRoute --> CallStore
-    StatusRoute --> CallStore
-    StatusRoute --> UI
-    CallRoute -.-> Gemini
-```
+[![CALL-E System Architecture](./app_architecture.jpeg)](./app_architecture.jpeg)
 
 ### Step-by-Step Data Flow
 
@@ -227,7 +188,7 @@ npm start
 
 | Feature | Description |
 |---|---|
-| 🔗 **Live Demo** | *[Insert Live App Deployment Link Here]* |
+| 🔗 **Live Demo** | [https://calle-coral.vercel.app/](https://calle-coral.vercel.app/) |
 | 📹 **Video Walkthrough** | *[Insert Loom / YouTube Hackathon Demo Link Here]* |
 
 ### Key User Experiences
