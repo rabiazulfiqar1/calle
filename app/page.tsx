@@ -48,6 +48,13 @@ const FEATURES = [
     description: "Have CALL-E check in on a loved one with a warm, natural conversation.",
     badge: null,
   },
+  {
+    href: "/demo",
+    icon: PackageIcon,
+    title: "Demo page",
+    description: "--",
+    badge: null,
+  }
 ];
 
 export default function DashboardPage() {
