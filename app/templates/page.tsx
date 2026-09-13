@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Nav from "@/app/components/Nav";
 import StatusBadge from "@/app/components/StatusBadge";
+import PhoneInput from "@/app/components/PhoneInput";
 import CallResult from "@/app/components/CallResult";
 
 // ── Template Definitions ──────────────────────────────────────────────────
@@ -305,45 +306,44 @@ function TemplatesPageInner() {
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-8">
                 {/* ── Recipient section ── */}
-                <Section title="Who to call" description="The phone number CALL-E will dial.">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="sm:col-span-3">
-                      <FieldLabel htmlFor="phone" label="Phone number" hint="International format — e.g. +923001234567" required />
-                      <input
+                <Section title="Who to call" description="The number CALL-E will dial.">
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-1.5">
+                        Phone number <span className="text-xs text-zinc-400 font-normal">— select country code, then type number</span>
+                      </label>
+                      <PhoneInput
                         id="phone"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        phone={phone}
+                        region={region}
+                        onChange={(newPhone, newRegion) => {
+                          setPhone(newPhone);
+                          setRegion(newRegion);
+                        }}
                         required
-                        placeholder="+923001234567"
-                        className={inputCls}
                       />
                     </div>
-                    <div>
-                      <FieldLabel htmlFor="region" label="Region" required />
-                      <select id="region" value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls}>
-                        {REGIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <FieldLabel htmlFor="locale" label="Language" required />
-                      <select id="locale" value={locale} onChange={(e) => setLocale(e.target.value)} className={inputCls}>
-                        {LOCALES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <FieldLabel htmlFor="callerName" label="Your name (optional)" hint="CALL-E says 'on behalf of…'" />
-                      <input
-                        id="callerName"
-                        type="text"
-                        value={callerName}
-                        onChange={(e) => setCallerName(e.target.value)}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <FieldLabel htmlFor="locale" label="Language" required />
+                        <select id="locale" value={locale} onChange={(e) => setLocale(e.target.value)} className={inputCls}>
+                          {LOCALES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <FieldLabel htmlFor="callerName" label="Your name" hint="CALL-E says 'on behalf of…'" />
+                        <input
+                          id="callerName"
+                          type="text"
+                          value={callerName}
+                          onChange={(e) => setCallerName(e.target.value)}
                         placeholder="e.g. Rabia"
                         className={inputCls}
                       />
                     </div>
                   </div>
-                </Section>
+                </div>
+              </Section>
 
                 {/* ── Template fields ── */}
                 <Section title="Call details" description="Tell CALL-E what to ask or say.">

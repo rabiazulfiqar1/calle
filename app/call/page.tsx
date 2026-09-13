@@ -4,6 +4,7 @@ import { useState } from "react";
 import Nav from "@/app/components/Nav";
 import StatusBadge from "@/app/components/StatusBadge";
 import CallResult from "@/app/components/CallResult";
+import PhoneInput from "@/app/components/PhoneInput";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -302,33 +303,29 @@ export default function CustomCallPage() {
         {/* Step indicator */}
         <StepIndicator steps={STEPS} currentStep={step} stepOrder={stepOrder} />
 
-        {/* Recipient (shown only in compose step) */}
+        {/* Recipient (shown only in compose step of phase 1) */}
         {step === "compose" && phase === 1 && (
           <div className="mt-6 rounded-xl border border-zinc-200 overflow-hidden">
             <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50">
               <h2 className="text-sm font-semibold text-zinc-800">Who should CALL-E call?</h2>
             </div>
-            <div className="px-5 py-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="col-span-2 sm:col-span-3">
+            <div className="px-5 py-5 flex flex-col gap-4">
+              <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-1.5">
-                  Phone number <span className="text-zinc-400 font-normal text-xs">(international format)</span>
+                  Phone number{" "}
+                  <span className="text-xs text-zinc-400 font-normal">— select country code, then type number</span>
                 </label>
-                <input
+                <PhoneInput
                   id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+923001234567"
-                  className={inputCls}
+                  phone={phone}
+                  region={region}
+                  onChange={(newPhone, newRegion) => {
+                    setPhone(newPhone);
+                    setRegion(newRegion);
+                  }}
                 />
               </div>
-              <div>
-                <label htmlFor="region" className="block text-sm font-medium text-zinc-700 mb-1.5">Region</label>
-                <select id="region" value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls}>
-                  {REGIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-              </div>
-              <div>
+              <div className="w-full sm:w-48">
                 <label htmlFor="locale" className="block text-sm font-medium text-zinc-700 mb-1.5">Language</label>
                 <select id="locale" value={locale} onChange={(e) => setLocale(e.target.value)} className={inputCls}>
                   {LOCALES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
