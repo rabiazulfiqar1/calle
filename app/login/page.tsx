@@ -33,10 +33,15 @@ function LoginForm() {
         router.refresh();
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(error.message);
+      } else if (data.session) {
+        // Email confirmation is OFF in Supabase — user is signed in immediately.
+        router.push(redirectTo);
+        router.refresh();
       } else {
+        // Email confirmation is ON — no session yet, user must confirm first.
         setMessage("Check your email to confirm your account, then sign in.");
         setMode("login");
       }

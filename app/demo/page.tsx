@@ -34,24 +34,36 @@ const TWO_PHASE_DATA = {
 [00:00:04] CLINIC: Sure, let me check our schedule. What day works?
 [00:00:08] BOT: Any weekday afternoon this week would be great.
 [00:00:13] CLINIC: We have Thursday at 3pm or Friday at 2:30pm available.
-[00:00:19] BOT: Perfect, thank you for checking — I'll confirm and call back to book one of those slots.
-[00:00:25] CLINIC: Sounds good, talk soon!`,
+[00:00:19] BOT: Perfect, thank you for your help!`,
   result1: {
-    summary: "Appointment slots available: Thursday at 3:00 PM and Friday at 2:30 PM.",
+    summary: "Appointment available for Thursday at 3:00 PM and Friday at 2:30 PM.",
     taskCompleted: true,
     evidence: [
-      "The clinic confirmed Thursday at 3pm and Friday at 2:30pm were both available.",
+      "The clinic confirmed the Thursday at 3pm and Friday at 2:30pm slots were available.",
     ],
   },
   phase2TaskDefault: "Call back to book the appointment for Thursday at 3pm.",
-  transcript2: `[00:00:00] BOT: Hi, following up on the previous call — there was an available slot this week on Thursday at 3pm. I'd like to book that slot under the name Emma.
-[00:00:07] CLINIC: Alright! An appointment under the name Emma has been booked for Thursday at 3:00pm.
-[00:00:14] BOT: Great, thank you!`,
+  transcript2: `[00:00:00] BOT: Hi, following up on the previous call in which there was an available slot this week on Thursday at 3pm — I wanted to book this slot under the name Emma.
+[00:00:06] CLINIC: Alright! An appointment under the name Emma has been booked for Thursday at 3:00pm.
+[00:00:13] BOT: Great, thank you!`,
   result2: {
-    summary: "The appointment was booked for Thursday at 3pm under the name Emma.",
+    summary: "The appointment was booked for Thursday at 3pm.",
     taskCompleted: true,
-    evidence: ["The clinic confirmed the appointment was booked for Emma on Thursday at 3pm."],
+    evidence: ["The clinic booked the appointment for Emma."],
   },
+};
+
+// Scripted data for the "Relay Message" idle-screen preview, matching the real
+// Templates page's field layout exactly (read-only here — just illustrative).
+const RELAY_DATA = {
+  phone: "+1 276-322-9632",
+  language: "English",
+  contactName: "Ahmed",
+  relationship: "friend",
+  messageToRelay:
+    "I'm running about 20 minutes late to our meetup. I'm on my way and will share my location so you know where I am.",
+  callerName: "Rabia",
+  locationConsent: true,
 };
 
 const SCENARIOS: DemoScenario[] = [
@@ -81,19 +93,20 @@ const SCENARIOS: DemoScenario[] = [
     id: "relay_message",
     label: "Relay a message to someone",
     icon: <MessageSquare />,
-    goal: "Call Mike and let him know that dinner tonight has been moved to 8pm instead of 7pm",
-    recipientName: "Mike",
-    phone: "+1 276-322-9632",
+    goal: "Call Ahmed and let him know I'm running 20 minutes late to our meetup, sharing my current location",
+    recipientName: "Ahmed",
+    phone: "+92 300 1234567",
     simulatedDelaySeconds: 5,
-    transcript: `[00:00:00] BOT: Hey Mike, just calling to pass along a message — dinner tonight has been moved to 8pm instead of 7pm.
-[00:00:07] MIKE: Oh, good to know, thanks! 8pm works fine for me.
-[00:00:13] BOT: Great, I'll let them know. Have a good evening!
-[00:00:19] MIKE: You too, thanks for calling.`,
-    summary: "Mike was informed that dinner tonight has been moved to 8pm instead of 7pm.",
+    transcript: `[00:00:00] BOT: Hey Ahmed, quick message from Rabia — she's running about 20 minutes late to your meetup. She's on her way now.
+[00:00:07] AHMED: No worries, thanks for letting me know!
+[00:00:12] BOT: She'd also like to share her current location so you know exactly where she is — she's near DHA Phase 6, about 15 minutes away.
+[00:00:20] AHMED: Got it, that's helpful — see her soon!
+[00:00:24] BOT: Great, take care!`,
+    summary: "Ahmed was told Rabia is running 20 minutes late, with her current location shared (near DHA Phase 6, ~15 min away).",
     taskCompleted: true,
     evidence: [
-      "Mike was told the new dinner time was 8pm instead of 7pm.",
-      "Mike confirmed he received the message and that 8pm works for him.",
+      "Ahmed was informed of the 20-minute delay to the meetup.",
+      "Ahmed acknowledged receiving Rabia's shared location near DHA Phase 6.",
     ],
   },
   {
@@ -162,8 +175,8 @@ const SCENARIOS: DemoScenario[] = [
     ],
   },
   {
-    id: "two_phase",
-    label: "Custom call (plan → call → confirm)",
+    id: "Custom call",
+    label: "Two-phase call (phase 1 → plan → call → phase 2 → call)",
     icon: <RepeatIcon />,
     goal: TWO_PHASE_DATA.goal,
     recipientName: TWO_PHASE_DATA.recipientName,
@@ -207,7 +220,6 @@ export default function DemoPage() {
           <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Demo</h1>
         </div>
 
-        
 
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="lg:w-56 shrink-0">
@@ -237,6 +249,7 @@ export default function DemoPage() {
               <div>
                 <h2 className="text-lg font-semibold text-zinc-900">{scenario.label}</h2>
                 <p className="text-sm text-zinc-500 mt-0.5">
+                  CALL-E will scripted-call this recipient.
                 </p>
               </div>
               <StatusBadge
@@ -248,7 +261,11 @@ export default function DemoPage() {
               <TwoPhaseScenario key={scenario.id} onStatusChange={setPhase} />
             ) : (
               <>
-                {phase === "idle" && (
+                {phase === "idle" && scenario.id === "relay_message" && (
+                  <RelayMessageIdlePreview onSend={runDemo} />
+                )}
+
+                {phase === "idle" && scenario.id !== "relay_message" && (
                   <form
                     className="flex flex-col gap-8"
                     onSubmit={(e) => {
@@ -346,6 +363,93 @@ export default function DemoPage() {
 // Entirely scripted / client-side. No planning API and no real call is ever made.
 
 type TPPhase = "idle" | "planning" | "clarify" | "calling1" | "result1" | "phase2_setup" | "calling2" | "result2";
+
+// ── Relay Message idle-screen preview — mirrors the real Templates form layout ──
+// (phone + language, who/relationship, message, your name, share-location) so the
+// demo genuinely looks like the live template. Entirely read-only / scripted.
+
+function RelayMessageIdlePreview({ onSend }: { onSend: () => void }) {
+  return (
+    <form
+      className="flex flex-col gap-8"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSend();
+      }}
+    >
+      <Section title="Who to call" description="The person CALL-E will reach.">
+        <div className="flex flex-col gap-4">
+          <div>
+            <FieldLabel label="Phone number" hint="Select country code, then type number" required />
+            <div className="flex gap-2">
+              <div className={`${inputCls} w-20 px-2.5 flex items-center justify-between shrink-0`}>
+                <span>{RELAY_DATA.phone}</span>
+                <span className="text-zinc-400 text-xs">▾</span>
+              </div>
+            </div>
+            </div>
+          <div className="max-w-[220px]">
+            <FieldLabel label="Language" required />
+            <div className={`${inputCls} flex items-center justify-between`}>
+              <span>{RELAY_DATA.language}</span>
+              <span className="text-zinc-400">▾</span>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="The message" description="What CALL-E will say.">
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <FieldLabel label="Who are we calling?" required />
+              <input type="text" readOnly value={RELAY_DATA.contactName} className={inputCls} />
+            </div>
+            <div>
+              <FieldLabel label="Your relationship to them" />
+              <input type="text" readOnly value={RELAY_DATA.relationship} className={inputCls} />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel label="What should CALL-E say?" required />
+            <textarea readOnly rows={3} value={RELAY_DATA.messageToRelay} className={`${inputCls} resize-none`} />
+          </div>
+
+          <div>
+            <FieldLabel label="Your name" hint="CALL-E says 'on behalf of…'" />
+            <input type="text" readOnly value={RELAY_DATA.callerName} className={inputCls} />
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Share your location" description="Optional — only if it's relevant to the message.">
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={RELAY_DATA.locationConsent}
+            readOnly
+            className="mt-0.5 w-4 h-4 rounded border-zinc-300 text-blue-600 cursor-default"
+          />
+          <div>
+            <span className="text-sm font-medium text-zinc-700">Include my location in the message</span>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              CALL-E will share your address once, clearly, and offer to repeat it.
+            </p>
+          </div>
+        </label>
+      </Section>
+
+      <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <button type="submit" className={primaryBtn}>
+          <PhoneIcon />
+          Send Message via CALL-E
+        </button>
+        <p className="text-xs text-zinc-400">This is a scripted demo — no real call is placed.</p>
+      </div>
+    </form>
+  );
+}
 
 function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => void }) {
   const [phase, setPhase] = useState<TPPhase>("idle");
