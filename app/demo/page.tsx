@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Nav from "@/app/components/Nav";
 import StatusBadge from "@/app/components/StatusBadge";
 import CallResult from "@/app/components/CallResult";
-import { XCircle } from "lucide-react";
-import { MessageSquare } from "lucide-react";
+import { XCircle, MessageSquare } from "lucide-react";
+
 // ── Scripted scenarios ───────────────────────────────────────────────────
 
 type DemoScenario = {
@@ -132,7 +132,7 @@ const SCENARIOS: DemoScenario[] = [
   {
     id: "relay_message",
     label: "Relay a message to someone",
-    icon: <MessageSquare />,
+    icon: <MessageSquare className="w-4 h-4" />,
     goal: "Call Ahmed and let him know I'm running 20 minutes late to our meetup, sharing my current location",
     recipientName: "Ahmed",
     phone: "+92 300 1234567",
@@ -152,7 +152,7 @@ const SCENARIOS: DemoScenario[] = [
   {
     id: "cancel_service",
     label: "Cancel a subscription or service",
-    icon: <XCircle />,
+    icon: <XCircle className="w-4 h-4" />,
     goal: "Cancel a gym membership with FitLife Gym under the account of John Carter, effective at the end of the current billing cycle",
     recipientName: "FitLife Gym Member Services",
     phone: "+1 276-322-9632",
@@ -229,7 +229,7 @@ const SCENARIOS: DemoScenario[] = [
   },
   {
     id: "Custom call",
-    label: "Custom call (phase 1 → plan → call → phase 2 → call)",
+    label: "Custom call (two-phase flow)",
     icon: <RepeatIcon />,
     goal: TWO_PHASE_DATA.goal,
     recipientName: TWO_PHASE_DATA.recipientName,
@@ -265,252 +265,455 @@ export default function DemoPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-surface font-body-base text-on-surface antialiased">
       <Nav />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-10">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Demo</h1>
-        </div>
-
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="lg:w-56 shrink-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
-              Choose a scenario
-            </p>
-            <nav className="flex flex-row lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0">
-              {SCENARIOS.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => selectScenario(s.id)}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left whitespace-nowrap lg:whitespace-normal transition-colors ${
-                    s.id === selectedId
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-                  }`}
-                >
-                  <span className={s.id === selectedId ? "text-white" : "text-zinc-400"}>{s.icon}</span>
-                  {s.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-6 gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-zinc-900">{scenario.label}</h2>
-                <p className="text-sm text-zinc-500 mt-0.5">
-                  CALL-E will scripted-call this recipient.
-                </p>
+      <main className="w-full pt-16 bg-surface min-h-screen">
+        <div className="flex flex-col w-full">
+          <div className="w-full max-w-5xl mx-auto px-margin py-margin-desktop">
+            {/* Top Context Ribbon & Protocol Tracker */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-xl">
+              <div className="flex items-center gap-space-sm">
+                <span className="px-2.5 py-1 rounded-full bg-surface-container font-mono-code text-mono-code text-on-surface-variant uppercase tracking-wider">
+                  MOD-04 // DEMO_SIMULATOR
+                </span>
+                <span className="flex items-center gap-1.5 font-body-meta text-body-meta text-success-text font-medium bg-success-bg px-2.5 py-1 rounded-full shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  Interactive Simulation Ready
+                </span>
               </div>
-              <StatusBadge
-                status={phase === "calling" ? "calling" : phase === "result" ? "success" : "idle"}
-              />
+              <div className="flex items-center gap-space-sm font-body-meta text-body-meta text-on-surface-variant">
+                <span className="material-symbols-outlined text-[16px] text-tertiary">tune</span>
+                <span>
+                  Mode:{" "}
+                  <strong className="text-on-surface font-body-medium">
+                    Scripted Telephony Sandbox (0ms)
+                  </strong>
+                </span>
+              </div>
             </div>
 
-            {scenario.id === "Custom call" ? (
-              <TwoPhaseScenario key={scenario.id} onStatusChange={setPhase} />
-            ) : scenario.id === "compare_vendors" ? (
-              <CompareVendorsScenario key={scenario.id} onStatusChange={setPhase} />
-            ) : (
-              <>
-                {phase === "idle" && scenario.id === "relay_message" && (
-                  <RelayMessageIdlePreview onSend={runDemo} />
-                )}
+            {/* Dual Pane Interface */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+              {/* LEFT SIDEBAR: Scenario Catalog Switcher */}
+              <aside className="lg:col-span-4 flex flex-col gap-space-lg">
+                <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline">
+                  <div className="flex items-center justify-between pb-space-md mb-space-sm border-b border-surface-container-low">
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                      Scenarios
+                    </span>
+                    <span className="font-mono-code text-mono-code text-tertiary">
+                      {SCENARIOS.length} presets
+                    </span>
+                  </div>
 
-                {phase === "idle" && scenario.id !== "relay_message" && (
-                  <form
-                    className="flex flex-col gap-8"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      runDemo();
-                    }}
-                  >
-                    {/* ── Recipient section (styled like Templates' "Who to call") ── */}
-                    <Section title="Who to call" description="The number CALL-E will dial.">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <FieldLabel label="Recipient" required />
-                          <input type="text" readOnly value={scenario.recipientName} className={inputCls} />
-                        </div>
-                        <div>
-                          <FieldLabel label="Phone number" required />
-                          <input type="text" readOnly value={scenario.phone} className={inputCls} />
-                        </div>
+                  <nav className="flex flex-col gap-space-xs">
+                    {SCENARIOS.map((s) => {
+                      const isActive = s.id === selectedId;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => selectScenario(s.id)}
+                          type="button"
+                          className={`w-full text-left flex items-center justify-between p-space-md rounded-lg transition-all duration-150 group ${
+                            isActive
+                              ? "bg-surface-dark text-canvas-white shadow-md"
+                              : "bg-surface-container-lowest hover:bg-surface-container text-on-surface"
+                          }`}
+                        >
+                          <div className="flex items-center gap-space-md min-w-0">
+                            <span
+                              className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                                isActive
+                                  ? "bg-surface-dark-elevated text-canvas-white"
+                                  : "bg-surface-container-high group-hover:bg-surface-container-highest text-on-surface-variant"
+                              }`}
+                            >
+                              {s.icon}
+                            </span>
+                            <div className="flex flex-col min-w-0">
+                              <span
+                                className={`font-card-title text-card-title truncate ${
+                                  isActive ? "text-canvas-white" : "text-on-surface"
+                                }`}
+                              >
+                                {s.label}
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            className={`material-symbols-outlined text-[18px] ${
+                              isActive ? "text-primary-fixed-dim" : "text-tertiary opacity-40"
+                            }`}
+                          >
+                            chevron_right
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+
+                  {/* Tip Box at Sidebar Bottom */}
+                  <div className="mt-space-xl p-space-md bg-surface-subtle rounded-lg border border-border-hairline shadow-2xs">
+                    <div className="flex items-start gap-space-sm">
+                      <span className="material-symbols-outlined text-primary text-[18px] mt-0.5">
+                        science
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-card-title text-card-title text-on-surface">
+                          Interactive Sandbox
+                        </span>
+                        <p className="font-body-meta text-body-meta text-on-surface-variant leading-relaxed">
+                          Select a scenario above to test CALL-E&apos;s automated voice proxy &amp; negotiation workflows in sandbox mode.
+                        </p>
                       </div>
-                    </Section>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* ── Call details section (styled like Templates' "Call details") ── */}
-                    <Section title="Call details" description="What CALL-E will say or ask.">
-                      <div>
-                        <FieldLabel label="Goal" required />
-                        <textarea
-                          readOnly
-                          rows={3}
-                          value={scenario.goal}
-                          className={`${inputCls} resize-none`}
-                        />
+                {/* Telephony Visualizer Micro-Card */}
+                <div className="bg-surface-dark rounded-xl p-space-lg text-canvas-white shadow-md relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-space-md">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-electric-sky" />
+                      <span className="font-label-caps text-label-caps uppercase tracking-wider text-surface-variant">
+                        Simulation Engine
+                      </span>
+                    </div>
+                    <span className="font-mono-code text-mono-code text-primary-fixed-dim">
+                      CALL-E Sandbox
+                    </span>
+                  </div>
+                  {/* Frequency Bars */}
+                  <div className="h-10 flex items-center justify-between gap-1 px-1">
+                    {[12, 24, 32, 16, 28, 36, 20, 32, 12, 24, 28, 8].map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-1 bg-electric-sky rounded-full animate-pulse"
+                        style={{ height: `${h}px`, animationDelay: `${i * 0.08}s` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-space-sm pt-space-sm flex items-center justify-between text-surface-variant font-mono-code text-mono-code border-t border-surface-dark-border">
+                    <span>Acoustic Stream</span>
+                    <span className="text-success-border font-medium">Active</span>
+                  </div>
+                </div>
+              </aside>
+
+              {/* RIGHT PANE: Dynamic Scenario Execution */}
+              <section className="lg:col-span-8 flex flex-col gap-space-lg">
+                {/* Header Card */}
+                <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-sm">
+                  <div className="flex items-start justify-between gap-space-md">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-space-sm">
+                        <h1 className="font-section-header text-section-header text-on-surface">
+                          {scenario.label}
+                        </h1>
+                        <span className="px-2 py-0.5 rounded-full font-label-caps text-label-caps uppercase bg-primary-subtle text-primary">
+                          Interactive Demo
+                        </span>
                       </div>
-                    </Section>
-
-                    {/* ── Confirm & call ── */}
-                    <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <button type="submit" className={primaryBtn}>
-                        <PhoneIcon />
-                        Place Call
-                      </button>
-                      <p className="text-xs text-zinc-400">This is a scripted demo — no real call is placed.</p>
-                    </div>
-                  </form>
-                )}
-
-                {phase === "calling" && (
-                  <div className="mt-4 flex flex-col items-center gap-6 text-center py-10">
-                    <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
-                      <CallingAnimation />
-                    </div>
-                    <div>
-                      <p className="text-lg font-semibold text-zinc-900">CALL-E is calling…</p>
-                      <p className="mt-1 text-sm text-zinc-500">
-                        Speaking with {scenario.recipientName}
+                      <p className="font-body-base text-body-base text-on-surface-variant">
+                        CALL-E will scripted-call this recipient.
                       </p>
                     </div>
-                  </div>
-                )}
-
-                {phase === "result" && (
-                  <div className="flex flex-col gap-5">
-                    <CallResult
-                      result={{
-                        status: "completed",
-                        taskCompleted: scenario.taskCompleted,
-                        evidence: scenario.evidence,
-                        summary: scenario.summary,
-                      }}
+                    <StatusBadge
+                      status={
+                        phase === "calling" ? "calling" : phase === "result" ? "success" : "idle"
+                      }
                     />
-
-                    <Section title="Transcript" description="A record of the scripted call.">
-                      <pre className="whitespace-pre-wrap text-xs font-mono text-zinc-600">
-                        {scenario.transcript}
-                      </pre>
-                    </Section>
-
-                    <button
-                      onClick={reset}
-                      className="text-sm text-zinc-500 hover:text-zinc-800 underline underline-offset-2 text-left"
-                    >
-                      ← Run another demo
-                    </button>
                   </div>
+                </div>
+
+                {scenario.id === "Custom call" ? (
+                  <TwoPhaseScenario key={scenario.id} onStatusChange={setPhase} />
+                ) : scenario.id === "compare_vendors" ? (
+                  <CompareVendorsScenario key={scenario.id} onStatusChange={setPhase} />
+                ) : (
+                  <>
+                    {phase === "idle" && scenario.id === "relay_message" && (
+                      <RelayMessageIdlePreview onSend={runDemo} />
+                    )}
+
+                    {phase === "idle" && scenario.id !== "relay_message" && (
+                      <form
+                        className="flex flex-col gap-space-lg"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          runDemo();
+                        }}
+                      >
+                        {/* Recipient section */}
+                        <Section
+                          title="Who to Call"
+                          description="Target Dialing Endpoint"
+                          stepNumber="01"
+                        >
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+                            <div className="flex flex-col gap-1.5">
+                              <FieldLabel label="Recipient" required />
+                              <input
+                                type="text"
+                                readOnly
+                                value={scenario.recipientName}
+                                className={inputCls}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                              <FieldLabel label="Phone Number" required />
+                              <input
+                                type="text"
+                                readOnly
+                                value={scenario.phone}
+                                className={inputCls}
+                              />
+                            </div>
+                          </div>
+                        </Section>
+
+                        {/* Call details section */}
+                        <Section
+                          title="Call Details"
+                          description="Intent & Negotiation Logic"
+                          stepNumber="02"
+                        >
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel label="Goal" required />
+                            <textarea
+                              readOnly
+                              rows={3}
+                              value={scenario.goal}
+                              className={`${inputCls} resize-none`}
+                            />
+                          </div>
+                        </Section>
+
+                        {/* Bottom Execution Protocol Bar */}
+                        <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+                            <div className="flex flex-col gap-1 max-w-md">
+                              <div className="flex items-center gap-space-sm">
+                                <span className="font-card-title text-card-title text-on-surface">
+                                  Execution Protocol
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full font-mono-code text-mono-code bg-surface-container text-on-surface-variant">
+                                  Sandbox Mode
+                                </span>
+                              </div>
+                              <p className="font-body-meta text-body-meta text-on-surface-variant leading-relaxed">
+                                This is a scripted demo — no real telephony call will be placed.
+                              </p>
+                            </div>
+
+                            <button type="submit" className={primaryBtn}>
+                              <span className="material-symbols-outlined text-[20px] text-electric-sky animate-pulse">
+                                call
+                              </span>
+                              <span>Place Call</span>
+                            </button>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-space-xs font-body-meta text-body-meta text-tertiary border-t border-surface-container-low">
+                            <div className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-[16px] text-success">
+                                verified
+                              </span>
+                              <span>End-to-End Scripted Simulation Sandbox</span>
+                            </div>
+                            <span className="font-mono-code text-mono-code text-tertiary">
+                              LATENCY: 0ms
+                            </span>
+                          </div>
+                        </div>
+                      </form>
+                    )}
+
+                    {phase === "calling" && (
+                      <div className="bg-surface-container-lowest rounded-xl p-space-xl shadow-sm border border-border-hairline text-center flex flex-col items-center justify-center gap-space-md py-16">
+                        <div className="w-16 h-16 rounded-2xl bg-primary-subtle border border-primary-glow flex items-center justify-center">
+                          <CallingAnimation />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <h3 className="font-section-header text-section-header text-on-surface">
+                            CALL-E is calling…
+                          </h3>
+                          <p className="font-body-base text-body-base text-on-surface-variant">
+                            Speaking with {scenario.recipientName}
+                          </p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full font-mono-code text-mono-code bg-surface-container text-on-surface-variant animate-pulse">
+                          Simulating Acoustic Stream...
+                        </span>
+                      </div>
+                    )}
+
+                    {phase === "result" && (
+                      <div className="flex flex-col gap-space-lg">
+                        <CallResult
+                          result={{
+                            status: "completed",
+                            taskCompleted: scenario.taskCompleted,
+                            evidence: scenario.evidence,
+                            summary: scenario.summary,
+                          }}
+                        />
+
+                        <Section title="Transcript" description="TELEPHONY_LOG_v1.04">
+                          <div className="p-space-md bg-surface-subtle rounded-lg border border-border-hairline">
+                            <pre className="whitespace-pre-wrap font-mono-code text-mono-code text-on-surface leading-relaxed">
+                              {scenario.transcript}
+                            </pre>
+                          </div>
+                        </Section>
+
+                        <button
+                          onClick={reset}
+                          className="font-body-medium text-body-medium font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5 pt-2"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                          <span>Run another demo scenario</span>
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </section>
+            </div>
           </div>
         </div>
       </main>
+
+      {/* Footer matching Templates */}
+      <footer className="w-full bg-surface-container-lowest border-t border-border-hairline py-space-xl mt-auto">
+        <div className="max-w-5xl mx-auto px-margin flex flex-col sm:flex-row items-center justify-between gap-space-base">
+          <div className="flex items-center gap-space-sm">
+            <span className="font-card-title text-card-title text-on-surface">Your Voice</span>
+            <span className="font-body-meta text-body-meta text-on-surface-variant">
+              — Autonomous Voice Proxy for Accessibility
+            </span>
+          </div>
+          <div className="flex items-center gap-space-lg font-body-meta text-body-meta text-on-surface-variant">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-success" /> Telephony Node Active
+            </span>
+            <span>© 2025 Your Voice Systems</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
 // ── Two-phase scripted flow (plan → call → carry context → plan → call) ──
-// Entirely scripted / client-side. No planning API and no real call is ever made.
-// Each phase is a single simple step: type an answer, place the call, see the result.
-
-type TPPhase = "idle" | "plan_call1" | "calling1" | "result1" | "plan_call2" | "calling2" | "result2";
-
-// ── Relay Message idle-screen preview — mirrors the real Templates form layout ──
-// (phone + language, who/relationship, message, your name, share-location) so the
-// demo genuinely looks like the live template. Entirely read-only / scripted.
+type TPPhase =
+  | "idle"
+  | "plan_call1"
+  | "calling1"
+  | "result1"
+  | "plan_call2"
+  | "calling2"
+  | "result2";
 
 function RelayMessageIdlePreview({ onSend }: { onSend: () => void }) {
   return (
     <form
-      className="flex flex-col gap-8"
+      className="flex flex-col gap-space-lg"
       onSubmit={(e) => {
         e.preventDefault();
         onSend();
       }}
     >
-      <Section title="Who to call" description="The person CALL-E will reach.">
-        <div className="flex flex-col gap-4">
-          <div>
-            <FieldLabel label="Phone number" hint="Select country code, then type number" required />
+      <Section title="Who to Call" description="Target Dialing Endpoint" stepNumber="01">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel label="Phone Number" hint="Select country code, then type number" required />
             <div className="flex gap-2">
-              <div className={`${inputCls} w-20 px-2.5 flex items-center justify-between shrink-0`}>
+              <div className={`${inputCls} flex items-center justify-between shrink-0`}>
                 <span>{RELAY_DATA.phone}</span>
-                <span className="text-zinc-400 text-xs">▾</span>
+                <span className="material-symbols-outlined text-[16px] text-tertiary">
+                  arrow_drop_down
+                </span>
               </div>
             </div>
-            </div>
-          <div className="max-w-[220px]">
-            <FieldLabel label="Language" required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel label="Proxy Speech Accent & Language" required />
             <div className={`${inputCls} flex items-center justify-between`}>
               <span>{RELAY_DATA.language}</span>
-              <span className="text-zinc-400">▾</span>
+              <span className="material-symbols-outlined text-[16px] text-tertiary">
+                arrow_drop_down
+              </span>
             </div>
           </div>
         </div>
       </Section>
 
-      <Section title="The message" description="What CALL-E will say.">
-        <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <FieldLabel label="Who are we calling?" required />
-              <input type="text" readOnly value={RELAY_DATA.contactName} className={inputCls} />
-            </div>
-            <div>
-              <FieldLabel label="Your relationship to them" />
-              <input type="text" readOnly value={RELAY_DATA.relationship} className={inputCls} />
-            </div>
+      <Section title="Call Details" description="Intent & Message Payload" stepNumber="02">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md mb-space-sm">
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel label="Who are we calling?" required />
+            <input type="text" readOnly value={RELAY_DATA.contactName} className={inputCls} />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel label="Your relationship to them" />
+            <input type="text" readOnly value={RELAY_DATA.relationship} className={inputCls} />
+          </div>
+        </div>
 
-          <div>
-            <FieldLabel label="What should CALL-E say?" required />
-            <textarea readOnly rows={3} value={RELAY_DATA.messageToRelay} className={`${inputCls} resize-none`} />
-          </div>
+        <div className="flex flex-col gap-1.5 mb-space-sm">
+          <FieldLabel label="What should CALL-E say?" required />
+          <textarea readOnly rows={3} value={RELAY_DATA.messageToRelay} className={`${inputCls} resize-none`} />
+        </div>
 
-          <div>
-            <FieldLabel label="Your name" hint="CALL-E says 'on behalf of…'" />
-            <input type="text" readOnly value={RELAY_DATA.callerName} className={inputCls} />
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel label="Your name" hint="CALL-E says 'on behalf of…'" />
+          <input type="text" readOnly value={RELAY_DATA.callerName} className={inputCls} />
         </div>
       </Section>
 
-      <Section title="Share your location" description="Optional — only if it's relevant to the message.">
-        <label className="flex items-start gap-3">
+      <Section title="Share your location" description="Optional — location consent" stepNumber="03">
+        <label className="flex items-center gap-space-sm cursor-default">
           <input
             type="checkbox"
             checked={RELAY_DATA.locationConsent}
             readOnly
-            className="mt-0.5 w-4 h-4 rounded border-zinc-300 text-blue-600 cursor-default"
+            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-default"
           />
-          <div>
-            <span className="text-sm font-medium text-zinc-700">Include my location in the message</span>
-            <p className="text-xs text-zinc-400 mt-0.5">
+          <div className="flex flex-col">
+            <span className="font-body-base text-body-base text-on-surface">
+              Include my location in the message
+            </span>
+            <span className="font-body-meta text-body-meta text-on-surface-variant">
               CALL-E will share your address once, clearly, and offer to repeat it.
-            </p>
+            </span>
           </div>
         </label>
       </Section>
 
-      <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <button type="submit" className={primaryBtn}>
-          <PhoneIcon />
-          Send Message via CALL-E
-        </button>
-        <p className="text-xs text-zinc-400">This is a scripted demo — no real call is placed.</p>
+      <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+          <div className="flex flex-col gap-1 max-w-md">
+            <span className="font-card-title text-card-title text-on-surface">
+              Execution Protocol
+            </span>
+            <p className="font-body-meta text-body-meta text-on-surface-variant leading-relaxed">
+              This is a scripted demo — no real telephony call will be placed.
+            </p>
+          </div>
+
+          <button type="submit" className={primaryBtn}>
+            <span className="material-symbols-outlined text-[20px] text-electric-sky animate-pulse">
+              call
+            </span>
+            <span>Send Message via CALL-E</span>
+          </button>
+        </div>
       </div>
     </form>
   );
 }
-
-// ── Compare Vendors scripted flow — mirrors the real Compare Vendors page ──
-// (job, preferred timing, questions to ask, a list of vendors), then simulates
-// calling everyone in parallel and shows a scripted winner + per-vendor grid.
-// Entirely read-only / scripted here — no /api/call request is ever made.
 
 type CVPhase = "compose" | "calling" | "result";
 
@@ -532,16 +735,16 @@ function CompareVendorsScenario({ onStatusChange }: { onStatusChange: (s: Phase)
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-space-lg">
       {phase === "compose" && (
         <form
-          className="flex flex-col gap-8"
+          className="flex flex-col gap-space-lg"
           onSubmit={(e) => {
             e.preventDefault();
             runDemo();
           }}
         >
-          <Section title="What job do you need done?" description="CALL-E will describe this to every vendor.">
+          <Section title="What job do you need done?" description="Scope of Work" stepNumber="01">
             <textarea
               readOnly
               rows={3}
@@ -550,12 +753,12 @@ function CompareVendorsScenario({ onStatusChange }: { onStatusChange: (s: Phase)
             />
           </Section>
 
-          <Section title="Preferred timing" description="Optional — shared with every vendor.">
+          <Section title="Preferred Timing" description="Schedule Constraints" stepNumber="02">
             <input type="text" readOnly value={COMPARE_VENDORS_DATA.preferredTiming} className={inputCls} />
           </Section>
 
-          <Section title="What should CALL-E ask every vendor?" description="The same questions are asked of each vendor, so answers can be compared.">
-            <div className="flex flex-col gap-2">
+          <Section title="What should CALL-E ask every vendor?" description="Evaluation Criteria" stepNumber="03">
+            <div className="flex flex-col gap-space-sm">
               {COMPARE_VENDORS_DATA.fieldsToAsk.map((f, i) => (
                 <input key={i} type="text" readOnly value={f} className={inputCls} />
               ))}
@@ -564,12 +767,18 @@ function CompareVendorsScenario({ onStatusChange }: { onStatusChange: (s: Phase)
 
           <Section
             title={`Vendors to call (${COMPARE_VENDORS_DATA.vendors.length})`}
-            description="CALL-E calls each one in parallel and compares their answers."
+            description="Parallel Dialing Queue"
+            stepNumber="04"
           >
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-space-md">
               {COMPARE_VENDORS_DATA.vendors.map((v, i) => (
-                <div key={i} className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 flex flex-col gap-3">
-                  <span className="text-sm font-semibold text-zinc-800">Vendor {i + 1}</span>
+                <div
+                  key={i}
+                  className="p-space-md rounded-lg border border-border-hairline bg-surface-subtle flex flex-col gap-space-xs"
+                >
+                  <span className="font-card-title text-card-title text-on-surface">
+                    Vendor {i + 1}
+                  </span>
                   <input type="text" readOnly value={v.businessName} className={inputCls} />
                   <input type="text" readOnly value={v.phone} className={inputCls} />
                 </div>
@@ -577,62 +786,86 @@ function CompareVendorsScenario({ onStatusChange }: { onStatusChange: (s: Phase)
             </div>
           </Section>
 
-          <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <button type="submit" className={primaryBtn}>
-              <SplitIcon />
-              Call all vendors
-            </button>
-            <p className="text-xs text-zinc-400">This is a scripted demo — no real calls are placed.</p>
+          <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+              <div className="flex flex-col gap-1 max-w-md">
+                <span className="font-card-title text-card-title text-on-surface">
+                  Execution Protocol
+                </span>
+                <p className="font-body-meta text-body-meta text-on-surface-variant leading-relaxed">
+                  Parallel call simulation across 3 vendors.
+                </p>
+              </div>
+
+              <button type="submit" className={primaryBtn}>
+                <span className="material-symbols-outlined text-[20px] text-electric-sky animate-pulse">
+                  call
+                </span>
+                <span>Call All Vendors</span>
+              </button>
+            </div>
           </div>
         </form>
       )}
 
       {phase === "calling" && (
-        <div className="mt-4 flex flex-col items-center gap-6 text-center py-10">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+        <div className="bg-surface-container-lowest rounded-xl p-space-xl shadow-sm border border-border-hairline text-center flex flex-col items-center justify-center gap-space-md py-16">
+          <div className="w-16 h-16 rounded-2xl bg-primary-subtle border border-primary-glow flex items-center justify-center">
             <CallingAnimation />
           </div>
-          <div>
-            <p className="text-lg font-semibold text-zinc-900">
+          <div className="flex flex-col gap-1">
+            <h3 className="font-section-header text-section-header text-on-surface">
               Calling {COMPARE_VENDORS_DATA.vendors.length} vendors…
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              CALL-E is speaking with each vendor and will compare their answers once every call is done.
+            </h3>
+            <p className="font-body-base text-body-base text-on-surface-variant">
+              CALL-E is speaking with each vendor in parallel and will compare their responses.
             </p>
           </div>
         </div>
       )}
 
       {phase === "result" && (
-        <div className="flex flex-col gap-5">
-          <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-5 flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">Recommended</span>
-            <h3 className="text-lg font-semibold text-zinc-900">{COMPARE_VENDORS_DATA.result.winner}</h3>
-            <p className="text-sm text-zinc-600">{COMPARE_VENDORS_DATA.result.reasoning}</p>
+        <div className="flex flex-col gap-space-lg">
+          <div className="rounded-xl border border-primary-glow bg-primary-subtle p-space-lg flex flex-col gap-space-xs shadow-2xs">
+            <span className="font-label-caps text-label-caps uppercase tracking-wider text-primary">
+              Recommended Option
+            </span>
+            <h3 className="font-section-header text-section-header text-on-surface">
+              {COMPARE_VENDORS_DATA.result.winner}
+            </h3>
+            <p className="font-body-base text-body-base text-on-surface-variant">
+              {COMPARE_VENDORS_DATA.result.reasoning}
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
             {COMPARE_VENDORS_DATA.result.recipients.map((r, i) => {
               const isWinner = r.businessName === COMPARE_VENDORS_DATA.result.winner;
               return (
                 <div
                   key={i}
-                  className={`p-4 rounded-xl border flex flex-col gap-2 ${
-                    isWinner ? "border-blue-300 bg-blue-50/50" : "border-zinc-200 bg-white"
+                  className={`p-space-md rounded-xl border flex flex-col gap-space-xs ${
+                    isWinner
+                      ? "border-primary bg-primary-subtle shadow-xs"
+                      : "border-border-hairline bg-surface-container-lowest"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-zinc-800">{r.businessName}</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    <span className="font-card-title text-card-title text-on-surface">
+                      {r.businessName}
+                    </span>
+                    <span className="font-mono-code text-mono-code uppercase px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">
                       {r.outcome}
                     </span>
                   </div>
                   {COMPARE_VENDORS_DATA.fieldsToAsk.map((label, fi) => (
-                    <p key={fi} className="text-xs text-zinc-600">
-                      <span className="font-medium text-zinc-800">{label}:</span> {r.fields[fi]}
+                    <p key={fi} className="font-body-meta text-body-meta text-on-surface-variant">
+                      <strong className="text-on-surface font-body-medium">{label}:</strong> {r.fields[fi]}
                     </p>
                   ))}
-                  {r.notes && <p className="text-xs italic text-zinc-500">{r.notes}</p>}
+                  {r.notes && (
+                    <p className="font-body-meta text-body-meta italic text-tertiary">{r.notes}</p>
+                  )}
                 </div>
               );
             })}
@@ -640,9 +873,10 @@ function CompareVendorsScenario({ onStatusChange }: { onStatusChange: (s: Phase)
 
           <button
             onClick={startOver}
-            className="text-sm text-zinc-500 hover:text-zinc-800 underline underline-offset-2 text-left"
+            className="font-body-medium text-body-medium font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5 pt-2"
           >
-            ← Run this scenario again
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span>Run this scenario again</span>
           </button>
         </div>
       )}
@@ -666,7 +900,6 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
     onStatusChange(category);
   }, [phase, onStatusChange]);
 
-  // ── Phase 1: plan (ask which day) → place call → scripted result ──
   function goToPlanCall1() {
     setPhase("plan_call1");
   }
@@ -678,7 +911,6 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
     setTimeout(() => setPhase("result1"), 4000);
   }
 
-  // ── Phase 2: carried context + a single task box → place call once → result ──
   function goToPlanCall2() {
     setPhase("plan_call2");
   }
@@ -697,45 +929,56 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-space-lg">
       {phase === "idle" && (
         <>
-          <Section title="Who to call" description="The number CALL-E will dial.">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+          <Section title="Who to Call" description="Target Endpoint" stepNumber="01">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+              <div className="flex flex-col gap-1.5">
                 <FieldLabel label="Recipient" required />
                 <input type="text" readOnly value={TWO_PHASE_DATA.recipientName} className={inputCls} />
               </div>
-              <div>
-                <FieldLabel label="Phone number" required />
+              <div className="flex flex-col gap-1.5">
+                <FieldLabel label="Phone Number" required />
                 <input type="text" readOnly value={TWO_PHASE_DATA.phone} className={inputCls} />
               </div>
             </div>
           </Section>
 
           <Section
-            title="Call goal"
-            description="This scenario runs in two phases: plan and place a call, then carry the result into a second plan-and-call step."
+            title="Call Goal"
+            description="Two-Phase Orchestration Flow"
+            stepNumber="02"
           >
             <textarea readOnly rows={3} value={TWO_PHASE_DATA.goal} className={`${inputCls} resize-none`} />
           </Section>
 
-          <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <button onClick={goToPlanCall1} className={primaryBtn}>
-              Plan Call
-            </button>
-            <p className="text-xs text-zinc-400">Scripted two-phase demo — no real call is placed.</p>
+          <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+              <div className="flex flex-col gap-1 max-w-md">
+                <span className="font-card-title text-card-title text-on-surface">
+                  Execution Protocol
+                </span>
+                <p className="font-body-meta text-body-meta text-on-surface-variant leading-relaxed">
+                  Phase 1 will collect slot availability before confirming in Phase 2.
+                </p>
+              </div>
+              <button onClick={goToPlanCall1} className={primaryBtn}>
+                <span>Plan Call</span>
+              </button>
+            </div>
           </div>
         </>
       )}
 
       {phase === "plan_call1" && (
         <Section
-          title="Plan the call"
-          description="Answer this to determine the call instructions, then place the call."
+          title="Plan the Call"
+          description="Phase 1 Clarification"
+          stepNumber="01"
         >
-          <div className="flex flex-col gap-4">
-            <div>
+          <div className="flex flex-col gap-space-md">
+            <div className="flex flex-col gap-1.5">
               <FieldLabel label={TWO_PHASE_DATA.clarifyingQuestion} required />
               <input
                 type="text"
@@ -747,8 +990,10 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
             </div>
             <div>
               <button onClick={placeCall1} disabled={!answer.trim()} className={primaryBtn}>
-                <PhoneIcon />
-                Place Call
+                <span className="material-symbols-outlined text-[20px] text-electric-sky animate-pulse">
+                  call
+                </span>
+                <span>Place Call</span>
               </button>
             </div>
           </div>
@@ -756,19 +1001,23 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
       )}
 
       {phase === "calling1" && (
-        <div className="mt-4 flex flex-col items-center gap-6 text-center py-10">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+        <div className="bg-surface-container-lowest rounded-xl p-space-xl shadow-sm border border-border-hairline text-center flex flex-col items-center justify-center gap-space-md py-16">
+          <div className="w-16 h-16 rounded-2xl bg-primary-subtle border border-primary-glow flex items-center justify-center">
             <CallingAnimation />
           </div>
-          <div>
-            <p className="text-lg font-semibold text-zinc-900">CALL-E is calling…</p>
-            <p className="mt-1 text-sm text-zinc-500">Speaking with {TWO_PHASE_DATA.recipientName}</p>
+          <div className="flex flex-col gap-1">
+            <h3 className="font-section-header text-section-header text-on-surface">
+              CALL-E is calling…
+            </h3>
+            <p className="font-body-base text-body-base text-on-surface-variant">
+              Speaking with {TWO_PHASE_DATA.recipientName}
+            </p>
           </div>
         </div>
       )}
 
       {phase === "result1" && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-space-lg">
           <CallResult
             result={{
               status: "completed",
@@ -777,29 +1026,33 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
               summary: TWO_PHASE_DATA.result1.summary,
             }}
           />
-          <Section title="Transcript" description="A record of the scripted call.">
-            <pre className="whitespace-pre-wrap text-xs font-mono text-zinc-600">{TWO_PHASE_DATA.transcript1}</pre>
+          <Section title="Transcript" description="Phase 1 Log">
+            <div className="p-space-md bg-surface-subtle rounded-lg border border-border-hairline">
+              <pre className="whitespace-pre-wrap font-mono-code text-mono-code text-on-surface leading-relaxed">
+                {TWO_PHASE_DATA.transcript1}
+              </pre>
+            </div>
           </Section>
           <button onClick={goToPlanCall2} className={primaryBtn}>
-            Continue to Phase 2 →
+            <span>Continue to Phase 2 →</span>
           </button>
         </div>
       )}
 
       {phase === "plan_call2" && (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-space-lg">
           <Section
             title="Carried from Phase 1"
-            description="Everything from the first call, passed along automatically — same as your real proceedToPhase2()."
+            description="Preserved Telemetry &amp; Context"
           >
-            <div className="flex flex-col gap-2 text-sm text-zinc-700">
+            <div className="flex flex-col gap-space-xs font-body-base text-body-base text-on-surface-variant">
               <p>
-                <span className="font-medium">Original goal:</span> {TWO_PHASE_DATA.goal}
+                <strong className="text-on-surface font-body-medium">Original goal:</strong> {TWO_PHASE_DATA.goal}
               </p>
               {qaHistory.length > 0 && (
                 <div>
-                  <p className="font-medium mb-1">Clarified before the call:</p>
-                  <ul className="list-disc list-inside text-zinc-600">
+                  <p className="text-on-surface font-body-medium mb-1">Clarified before the call:</p>
+                  <ul className="list-disc list-inside text-on-surface-variant font-mono-code text-mono-code">
                     {qaHistory.map((qa, i) => (
                       <li key={i}>
                         {qa.question} → {qa.answer}
@@ -809,20 +1062,20 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
                 </div>
               )}
               <p>
-                <span className="font-medium">Status:</span> completed ·{" "}
-                <span className="font-medium">Task completed:</span> {String(TWO_PHASE_DATA.result1.taskCompleted)}
+                <strong className="text-on-surface font-body-medium">Status:</strong> completed ·{" "}
+                <strong className="text-on-surface font-body-medium">Task completed:</strong> {String(TWO_PHASE_DATA.result1.taskCompleted)}
               </p>
               <p>
-                <span className="font-medium">Summary:</span> {TWO_PHASE_DATA.result1.summary}
+                <strong className="text-on-surface font-body-medium">Summary:</strong> {TWO_PHASE_DATA.result1.summary}
               </p>
             </div>
           </Section>
 
           <Section
-            title="Plan the confirmation call"
-            description="What should this follow-up call do, on top of everything above? Then place the call."
+            title="Plan the Confirmation Call"
+            description="Phase 2 Task Specification"
           >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-space-md">
               <textarea
                 rows={3}
                 value={phase2Task}
@@ -831,8 +1084,10 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
               />
               <div>
                 <button onClick={placeCall2} disabled={!phase2Task.trim()} className={primaryBtn}>
-                  <PhoneIcon />
-                  Place Call
+                  <span className="material-symbols-outlined text-[20px] text-electric-sky animate-pulse">
+                    call
+                  </span>
+                  <span>Place Call</span>
                 </button>
               </div>
             </div>
@@ -842,17 +1097,17 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
 
       {(phase === "calling2" || phase === "result2") && (
         <Section
-          title="Context carried into phase 2"
-          description="Everything from the first call is passed along automatically."
+          title="Context Carried into Phase 2"
+          description="Phase 1 Telemetry Link"
         >
-          <div className="flex flex-col gap-2 text-sm text-zinc-700">
+          <div className="flex flex-col gap-space-xs font-body-base text-body-base text-on-surface-variant">
             <p>
-              <span className="font-medium">Original goal:</span> {TWO_PHASE_DATA.goal}
+              <strong className="text-on-surface font-body-medium">Original goal:</strong> {TWO_PHASE_DATA.goal}
             </p>
             {qaHistory.length > 0 && (
               <div>
-                <p className="font-medium mb-1">Clarified before the call:</p>
-                <ul className="list-disc list-inside text-zinc-600">
+                <p className="text-on-surface font-body-medium mb-1">Clarified before the call:</p>
+                <ul className="list-disc list-inside text-on-surface-variant font-mono-code text-mono-code">
                   {qaHistory.map((qa, i) => (
                     <li key={i}>
                       {qa.question} → {qa.answer}
@@ -862,30 +1117,34 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
               </div>
             )}
             <p>
-              <span className="font-medium">Status:</span> completed ·{" "}
-              <span className="font-medium">Task completed:</span> {String(TWO_PHASE_DATA.result1.taskCompleted)}
+              <strong className="text-on-surface font-body-medium">Status:</strong> completed ·{" "}
+              <strong className="text-on-surface font-body-medium">Task completed:</strong> {String(TWO_PHASE_DATA.result1.taskCompleted)}
             </p>
             <p>
-              <span className="font-medium">Phase 2 call goal:</span> {phase2Task}
+              <strong className="text-on-surface font-body-medium">Phase 2 call goal:</strong> {phase2Task}
             </p>
           </div>
         </Section>
       )}
 
       {phase === "calling2" && (
-        <div className="mt-4 flex flex-col items-center gap-6 text-center py-10">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+        <div className="bg-surface-container-lowest rounded-xl p-space-xl shadow-sm border border-border-hairline text-center flex flex-col items-center justify-center gap-space-md py-16">
+          <div className="w-16 h-16 rounded-2xl bg-primary-subtle border border-primary-glow flex items-center justify-center">
             <CallingAnimation />
           </div>
-          <div>
-            <p className="text-lg font-semibold text-zinc-900">CALL-E is calling to confirm…</p>
-            <p className="mt-1 text-sm text-zinc-500">Speaking with {TWO_PHASE_DATA.recipientName}</p>
+          <div className="flex flex-col gap-1">
+            <h3 className="font-section-header text-section-header text-on-surface">
+              CALL-E is calling to confirm…
+            </h3>
+            <p className="font-body-base text-body-base text-on-surface-variant">
+              Speaking with {TWO_PHASE_DATA.recipientName}
+            </p>
           </div>
         </div>
       )}
 
       {phase === "result2" && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-space-lg">
           <CallResult
             result={{
               status: "completed",
@@ -894,14 +1153,19 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
               summary: TWO_PHASE_DATA.result2.summary,
             }}
           />
-          <Section title="Transcript" description="A record of the scripted confirmation call.">
-            <pre className="whitespace-pre-wrap text-xs font-mono text-zinc-600">{TWO_PHASE_DATA.transcript2}</pre>
+          <Section title="Transcript" description="Phase 2 Log">
+            <div className="p-space-md bg-surface-subtle rounded-lg border border-border-hairline">
+              <pre className="whitespace-pre-wrap font-mono-code text-mono-code text-on-surface leading-relaxed">
+                {TWO_PHASE_DATA.transcript2}
+              </pre>
+            </div>
           </Section>
           <button
             onClick={startOver}
-            className="text-sm text-zinc-500 hover:text-zinc-800 underline underline-offset-2 text-left"
+            className="font-body-medium text-body-medium font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5 pt-2"
           >
-            ← Run this scenario again
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span>Run this scenario again</span>
           </button>
         </div>
       )}
@@ -909,42 +1173,63 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
   );
 }
 
-// ── Shared UI (Section / FieldLabel / inputCls — borrowed from Templates page) ──
+// ── Shared UI Helper Components ─────────────────────────────────────────────
 
-function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function Section({
+  title,
+  description,
+  stepNumber,
+  children,
+}: {
+  title: string;
+  description?: string;
+  stepNumber?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-xl border border-zinc-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50">
-        <h3 className="text-sm font-semibold text-zinc-800">{title}</h3>
-        <p className="text-xs text-zinc-500 mt-0.5">{description}</p>
+    <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+      <div className="flex items-center justify-between pb-space-xs border-b border-surface-container-low">
+        <div className="flex items-center gap-space-sm">
+          {stepNumber && (
+            <span className="w-6 h-6 rounded-md bg-surface-container-high flex items-center justify-center font-mono-code text-mono-code text-on-surface font-semibold">
+              {stepNumber}
+            </span>
+          )}
+          <h2 className="font-card-title text-card-title text-on-surface">{title}</h2>
+        </div>
+        {description && (
+          <span className="font-body-meta text-body-meta text-on-surface-variant">
+            {description}
+          </span>
+        )}
       </div>
-      <div className="px-5 py-5">{children}</div>
+      <div className="flex flex-col gap-space-md">{children}</div>
     </div>
   );
 }
 
 function FieldLabel({ label, hint, required }: { label: string; hint?: string; required?: boolean }) {
   return (
-    <div className="mb-1.5">
-      <label className="text-sm font-medium text-zinc-700">
+    <div className="flex flex-col gap-0.5">
+      <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
         {label}
-        {!required && <span className="ml-1 text-zinc-400 font-normal">(optional)</span>}
+        {!required && <span className="text-tertiary ml-1 font-normal uppercase">(Optional)</span>}
       </label>
-      {hint && <p className="text-xs text-zinc-400 mt-0.5">{hint}</p>}
+      {hint && <span className="font-body-meta text-body-meta text-tertiary">{hint}</span>}
     </div>
   );
 }
 
 const inputCls =
-  "w-full px-3 py-2.5 rounded-lg border border-zinc-300 bg-zinc-50 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none cursor-default";
+  "w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest cursor-default";
 
 const editableInputCls =
-  "w-full px-3 py-2.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  "w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary";
 
 const primaryBtn =
-  "flex items-center gap-2 px-5 py-2.5 rounded-lg bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
+  "w-full sm:w-auto px-6 py-3 rounded-lg bg-surface-dark text-canvas-white hover:bg-surface-dark-elevated active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-space-sm shrink-0 font-body-medium text-body-medium font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed";
 
-// ── Icons (unchanged, plus SplitIcon for the new scenario) ─────────────────
+// ── Icons ──────────────────────────────────────────────────────────────────
 
 function CallingAnimation() {
   return (
@@ -957,23 +1242,6 @@ function CallingAnimation() {
         strokeLinejoin="round"
         className="animate-pulse"
       />
-    </svg>
-  );
-}
-
-function PhoneIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M2.5 4A1.5 1.5 0 0 1 4 2.5h1.071a.5.5 0 0 1 .485.379l.714 2.5a.5.5 0 0 1-.143.497L5.2 6.8a8.526 8.526 0 0 0 6 6l.925-1.025a.5.5 0 0 1 .497-.143l2.5.714a.5.5 0 0 1 .378.485V14a1.5 1.5 0 0 1-1.5 1.5C6.82 15.5 2.5 11.18 2.5 4Z" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function InfoIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.25" />
-      <path d="M9 8v4.5M9 6v.01" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
     </svg>
   );
 }
