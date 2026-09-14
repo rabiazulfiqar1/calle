@@ -7,7 +7,6 @@ import CallResult from "@/app/components/CallResult";
 import { XCircle } from "lucide-react";
 import { MessageSquare } from "lucide-react";
 // ── Scripted scenarios ───────────────────────────────────────────────────
-// NOTE: SCENARIOS content and all logic below are UNCHANGED from the original.
 
 type DemoScenario = {
   id: string;
@@ -23,13 +22,13 @@ type DemoScenario = {
   evidence: string[];
 };
 
-// Scripted data for the "two-phase" flow (plan → clarify → call → carry context → confirm).
+// Scripted data for the "two-phase" flow (plan → call → carry context → plan → call).
 // This is illustrative only — no planning API or real call is ever made.
 const TWO_PHASE_DATA = {
   goal: "Book a routine checkup at Smile Dental Clinic this week",
   recipientName: "Smile Dental Clinic",
   phone: "+1 276-322-9632",
-  clarifyingQuestion: "Do you have a preferred day or time for the checkup?",
+  clarifyingQuestion: "Which day would you like the appointment?",
   transcript1: `[00:00:00] BOT: Hi, this call is on behalf of a patient who'd like to book a routine dental checkup.
 [00:00:04] CLINIC: Sure, let me check our schedule. What day works?
 [00:00:08] BOT: Any weekday afternoon this week would be great.
@@ -42,7 +41,7 @@ const TWO_PHASE_DATA = {
       "The clinic confirmed the Thursday at 3pm and Friday at 2:30pm slots were available.",
     ],
   },
-  phase2TaskDefault: "Call back to book the appointment for Thursday at 3pm.",
+  phase2TaskDefault: "Book the appointment for Thursday at 3pm.",
   transcript2: `[00:00:00] BOT: Hi, following up on the previous call in which there was an available slot this week on Thursday at 3pm — I wanted to book this slot under the name Emma.
 [00:00:06] CLINIC: Alright! An appointment under the name Emma has been booked for Thursday at 3:00pm.
 [00:00:13] BOT: Great, thank you!`,
@@ -64,6 +63,47 @@ const RELAY_DATA = {
     "I'm running about 20 minutes late to our meetup. I'm on my way and will share my location so you know where I am.",
   callerName: "Rabia",
   locationConsent: true,
+};
+
+// Scripted data for the "Compare Vendors" idle/calling/result flow — mirrors the
+// real Compare Vendors page's fields exactly (job, timing, questions, vendors),
+// then a scripted parallel-call result with a recommended winner. Entirely
+// read-only / scripted here — no /api/call requests are ever made.
+const COMPARE_VENDORS_DATA = {
+  service: "Fixing a leaking kitchen faucet",
+  preferredTiming: "This week, weekday afternoons",
+  fieldsToAsk: ["Price", "Availability"],
+  vendors: [
+    { businessName: "QuickFix Plumbing", phone: "+92 300 1234567" },
+    { businessName: "Karachi Plumbers Co", phone: "+92 301 9876543" },
+    { businessName: "Reliable Repairs", phone: "+92 333 4567890" },
+  ],
+  simulatedDelaySeconds: 8,
+  result: {
+    winner: "Reliable Repairs",
+    reasoning:
+      "Reliable Repairs quoted the lowest price and could come out the same day, while the other two vendors needed two to three days to schedule.",
+    recipients: [
+      {
+        businessName: "QuickFix Plumbing",
+        outcome: "completed",
+        fields: ["$45 call-out + $20/hr", "Thursday afternoon"],
+        notes: "Mentioned an extra charge if parts need replacing.",
+      },
+      {
+        businessName: "Karachi Plumbers Co",
+        outcome: "completed",
+        fields: ["$60 flat rate", "Friday morning"],
+        notes: "Includes a 30-day workmanship warranty.",
+      },
+      {
+        businessName: "Reliable Repairs",
+        outcome: "completed",
+        fields: ["$40 flat rate", "Today, within 3 hours"],
+        notes: "Fastest availability and lowest price.",
+      },
+    ],
+  },
 };
 
 const SCENARIOS: DemoScenario[] = [
@@ -175,8 +215,21 @@ const SCENARIOS: DemoScenario[] = [
     ],
   },
   {
+    id: "compare_vendors",
+    label: "Compare vendors (parallel calls)",
+    icon: <SplitIcon />,
+    goal: COMPARE_VENDORS_DATA.service,
+    recipientName: `${COMPARE_VENDORS_DATA.vendors.length} vendors`,
+    phone: "",
+    simulatedDelaySeconds: COMPARE_VENDORS_DATA.simulatedDelaySeconds,
+    transcript: "",
+    summary: COMPARE_VENDORS_DATA.result.reasoning,
+    taskCompleted: true,
+    evidence: [],
+  },
+  {
     id: "Custom call",
-    label: "Two-phase call (phase 1 → plan → call → phase 2 → call)",
+    label: "Custom call (phase 1 → plan → call → phase 2 → call)",
     icon: <RepeatIcon />,
     goal: TWO_PHASE_DATA.goal,
     recipientName: TWO_PHASE_DATA.recipientName,
@@ -257,8 +310,10 @@ export default function DemoPage() {
               />
             </div>
 
-            {scenario.id === "two_phase" ? (
+            {scenario.id === "Custom call" ? (
               <TwoPhaseScenario key={scenario.id} onStatusChange={setPhase} />
+            ) : scenario.id === "compare_vendors" ? (
+              <CompareVendorsScenario key={scenario.id} onStatusChange={setPhase} />
             ) : (
               <>
                 {phase === "idle" && scenario.id === "relay_message" && (
@@ -359,10 +414,11 @@ export default function DemoPage() {
   );
 }
 
-// ── Two-phase scripted flow (plan → clarify → call → carry context → confirm) ──
+// ── Two-phase scripted flow (plan → call → carry context → plan → call) ──
 // Entirely scripted / client-side. No planning API and no real call is ever made.
+// Each phase is a single simple step: type an answer, place the call, see the result.
 
-type TPPhase = "idle" | "planning" | "clarify" | "calling1" | "result1" | "phase2_setup" | "calling2" | "result2";
+type TPPhase = "idle" | "plan_call1" | "calling1" | "result1" | "plan_call2" | "calling2" | "result2";
 
 // ── Relay Message idle-screen preview — mirrors the real Templates form layout ──
 // (phone + language, who/relationship, message, your name, share-location) so the
@@ -451,6 +507,149 @@ function RelayMessageIdlePreview({ onSend }: { onSend: () => void }) {
   );
 }
 
+// ── Compare Vendors scripted flow — mirrors the real Compare Vendors page ──
+// (job, preferred timing, questions to ask, a list of vendors), then simulates
+// calling everyone in parallel and shows a scripted winner + per-vendor grid.
+// Entirely read-only / scripted here — no /api/call request is ever made.
+
+type CVPhase = "compose" | "calling" | "result";
+
+function CompareVendorsScenario({ onStatusChange }: { onStatusChange: (s: Phase) => void }) {
+  const [phase, setPhase] = useState<CVPhase>("compose");
+
+  useEffect(() => {
+    const category: Phase = phase === "calling" ? "calling" : phase === "result" ? "result" : "idle";
+    onStatusChange(category);
+  }, [phase, onStatusChange]);
+
+  function runDemo() {
+    setPhase("calling");
+    setTimeout(() => setPhase("result"), COMPARE_VENDORS_DATA.simulatedDelaySeconds * 1000);
+  }
+
+  function startOver() {
+    setPhase("compose");
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      {phase === "compose" && (
+        <form
+          className="flex flex-col gap-8"
+          onSubmit={(e) => {
+            e.preventDefault();
+            runDemo();
+          }}
+        >
+          <Section title="What job do you need done?" description="CALL-E will describe this to every vendor.">
+            <textarea
+              readOnly
+              rows={3}
+              value={COMPARE_VENDORS_DATA.service}
+              className={`${inputCls} resize-none`}
+            />
+          </Section>
+
+          <Section title="Preferred timing" description="Optional — shared with every vendor.">
+            <input type="text" readOnly value={COMPARE_VENDORS_DATA.preferredTiming} className={inputCls} />
+          </Section>
+
+          <Section title="What should CALL-E ask every vendor?" description="The same questions are asked of each vendor, so answers can be compared.">
+            <div className="flex flex-col gap-2">
+              {COMPARE_VENDORS_DATA.fieldsToAsk.map((f, i) => (
+                <input key={i} type="text" readOnly value={f} className={inputCls} />
+              ))}
+            </div>
+          </Section>
+
+          <Section
+            title={`Vendors to call (${COMPARE_VENDORS_DATA.vendors.length})`}
+            description="CALL-E calls each one in parallel and compares their answers."
+          >
+            <div className="flex flex-col gap-3">
+              {COMPARE_VENDORS_DATA.vendors.map((v, i) => (
+                <div key={i} className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 flex flex-col gap-3">
+                  <span className="text-sm font-semibold text-zinc-800">Vendor {i + 1}</span>
+                  <input type="text" readOnly value={v.businessName} className={inputCls} />
+                  <input type="text" readOnly value={v.phone} className={inputCls} />
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <button type="submit" className={primaryBtn}>
+              <SplitIcon />
+              Call all vendors
+            </button>
+            <p className="text-xs text-zinc-400">This is a scripted demo — no real calls are placed.</p>
+          </div>
+        </form>
+      )}
+
+      {phase === "calling" && (
+        <div className="mt-4 flex flex-col items-center gap-6 text-center py-10">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+            <CallingAnimation />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-zinc-900">
+              Calling {COMPARE_VENDORS_DATA.vendors.length} vendors…
+            </p>
+            <p className="mt-1 text-sm text-zinc-500">
+              CALL-E is speaking with each vendor and will compare their answers once every call is done.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {phase === "result" && (
+        <div className="flex flex-col gap-5">
+          <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-5 flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">Recommended</span>
+            <h3 className="text-lg font-semibold text-zinc-900">{COMPARE_VENDORS_DATA.result.winner}</h3>
+            <p className="text-sm text-zinc-600">{COMPARE_VENDORS_DATA.result.reasoning}</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {COMPARE_VENDORS_DATA.result.recipients.map((r, i) => {
+              const isWinner = r.businessName === COMPARE_VENDORS_DATA.result.winner;
+              return (
+                <div
+                  key={i}
+                  className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                    isWinner ? "border-blue-300 bg-blue-50/50" : "border-zinc-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-zinc-800">{r.businessName}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      {r.outcome}
+                    </span>
+                  </div>
+                  {COMPARE_VENDORS_DATA.fieldsToAsk.map((label, fi) => (
+                    <p key={fi} className="text-xs text-zinc-600">
+                      <span className="font-medium text-zinc-800">{label}:</span> {r.fields[fi]}
+                    </p>
+                  ))}
+                  {r.notes && <p className="text-xs italic text-zinc-500">{r.notes}</p>}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={startOver}
+            className="text-sm text-zinc-500 hover:text-zinc-800 underline underline-offset-2 text-left"
+          >
+            ← Run this scenario again
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => void }) {
   const [phase, setPhase] = useState<TPPhase>("idle");
   const [answer, setAnswer] = useState("");
@@ -467,19 +666,24 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
     onStatusChange(category);
   }, [phase, onStatusChange]);
 
-  function startPlanning() {
-    setPhase("planning");
-    setTimeout(() => setPhase("clarify"), 1800);
+  // ── Phase 1: plan (ask which day) → place call → scripted result ──
+  function goToPlanCall1() {
+    setPhase("plan_call1");
   }
 
-  function submitAnswer() {
+  function placeCall1() {
     if (!answer.trim()) return;
     setQaHistory([{ question: TWO_PHASE_DATA.clarifyingQuestion, answer }]);
     setPhase("calling1");
     setTimeout(() => setPhase("result1"), 4000);
   }
 
-  function proceedToPhase2() {
+  // ── Phase 2: carried context + a single task box → place call once → result ──
+  function goToPlanCall2() {
+    setPhase("plan_call2");
+  }
+
+  function placeCall2() {
     if (!phase2Task.trim()) return;
     setPhase("calling2");
     setTimeout(() => setPhase("result2"), 4000);
@@ -511,47 +715,42 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
 
           <Section
             title="Call goal"
-            description="This scenario runs in two phases: a planning step with a clarifying question, then a call — followed by a second confirmation call."
+            description="This scenario runs in two phases: plan and place a call, then carry the result into a second plan-and-call step."
           >
             <textarea readOnly rows={3} value={TWO_PHASE_DATA.goal} className={`${inputCls} resize-none`} />
           </Section>
 
           <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <button onClick={startPlanning} className={primaryBtn}>
-              <PhoneIcon />
-              Start Planning
+            <button onClick={goToPlanCall1} className={primaryBtn}>
+              Plan Call
             </button>
             <p className="text-xs text-zinc-400">Scripted two-phase demo — no real call is placed.</p>
           </div>
         </>
       )}
 
-      {phase === "planning" && (
-        <div className="mt-4 flex flex-col items-center gap-6 text-center py-10">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
-            <CallingAnimation />
-          </div>
-          <p className="text-lg font-semibold text-zinc-900">CALL-E is planning the call…</p>
-        </div>
-      )}
-
-      {phase === "clarify" && (
+      {phase === "plan_call1" && (
         <Section
-          title="CALL-E needs more info"
-          description="Answering feeds directly into the final call instructions."
+          title="Plan the call"
+          description="Answer this to determine the call instructions, then place the call."
         >
-          <p className="text-sm text-zinc-700 mb-3">{TWO_PHASE_DATA.clarifyingQuestion}</p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="e.g. Any weekday afternoon this week"
-              className={inputCls}
-            />
-            <button onClick={submitAnswer} disabled={!answer.trim()} className={primaryBtn}>
-              Answer
-            </button>
+          <div className="flex flex-col gap-4">
+            <div>
+              <FieldLabel label={TWO_PHASE_DATA.clarifyingQuestion} required />
+              <input
+                type="text"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="e.g. Any weekday afternoon this week"
+                className={editableInputCls}
+              />
+            </div>
+            <div>
+              <button onClick={placeCall1} disabled={!answer.trim()} className={primaryBtn}>
+                <PhoneIcon />
+                Place Call
+              </button>
+            </div>
           </div>
         </Section>
       )}
@@ -581,13 +780,13 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
           <Section title="Transcript" description="A record of the scripted call.">
             <pre className="whitespace-pre-wrap text-xs font-mono text-zinc-600">{TWO_PHASE_DATA.transcript1}</pre>
           </Section>
-          <button onClick={() => setPhase("phase2_setup")} className={primaryBtn}>
+          <button onClick={goToPlanCall2} className={primaryBtn}>
             Continue to Phase 2 →
           </button>
         </div>
       )}
 
-      {phase === "phase2_setup" && (
+      {phase === "plan_call2" && (
         <div className="flex flex-col gap-8">
           <Section
             title="Carried from Phase 1"
@@ -620,23 +819,24 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
           </Section>
 
           <Section
-            title="Call goal for Phase 2"
-            description="What should this follow-up call accomplish, on top of everything above?"
+            title="Plan the confirmation call"
+            description="What should this follow-up call do, on top of everything above? Then place the call."
           >
-            <textarea
-              rows={3}
-              value={phase2Task}
-              onChange={(e) => setPhase2Task(e.target.value)}
-              className={`${editableInputCls} resize-y`}
-            />
+            <div className="flex flex-col gap-4">
+              <textarea
+                rows={3}
+                value={phase2Task}
+                onChange={(e) => setPhase2Task(e.target.value)}
+                className={`${editableInputCls} resize-y`}
+              />
+              <div>
+                <button onClick={placeCall2} disabled={!phase2Task.trim()} className={primaryBtn}>
+                  <PhoneIcon />
+                  Place Call
+                </button>
+              </div>
+            </div>
           </Section>
-
-          <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <button onClick={proceedToPhase2} disabled={!phase2Task.trim()} className={primaryBtn}>
-              <PhoneIcon />
-              Plan & Start Confirmation Call
-            </button>
-          </div>
         </div>
       )}
 
@@ -666,7 +866,7 @@ function TwoPhaseScenario({ onStatusChange }: { onStatusChange: (s: Phase) => vo
               <span className="font-medium">Task completed:</span> {String(TWO_PHASE_DATA.result1.taskCompleted)}
             </p>
             <p>
-              <span className="font-medium">Call goal for Phase 2:</span> {phase2Task}
+              <span className="font-medium">Phase 2 call goal:</span> {phase2Task}
             </p>
           </div>
         </Section>
@@ -744,7 +944,7 @@ const editableInputCls =
 const primaryBtn =
   "flex items-center gap-2 px-5 py-2.5 rounded-lg bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
 
-// ── Icons (unchanged) ─────────────────────────────────────────────────────
+// ── Icons (unchanged, plus SplitIcon for the new scenario) ─────────────────
 
 function CallingAnimation() {
   return (
@@ -811,6 +1011,16 @@ function HeartIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <path d="M9 14.5S2.5 10.5 2.5 6.25a3.75 3.75 0 0 1 6.5-2.55A3.75 3.75 0 0 1 15.5 6.25C15.5 10.5 9 14.5 9 14.5Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SplitIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M3 3.5h3.5L12 10v4.5h3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 14.5h3.5L12 8V3.5h3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 2l2.5 1.5L13 5M13 13l2.5 1.5L13 16" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
