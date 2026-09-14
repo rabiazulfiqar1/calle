@@ -20,7 +20,8 @@ Despite the digital era, the physical world still runs on voice phone calls. Cri
 - Checking in on delayed prescription deliveries or packages,
 - Canceling subscriptions or memberships that require speaking to a retention rep,
 - Checking in on elderly family members living alone,
-- Relaying urgent messages with location details during emergencies,
+- Getting quotes from multiple vendors or contractors for the same job,
+- Relaying urgent messages with location details,
 
 ...often have **no online chat alternative** or require navigating complex, auditory-only Interactive Voice Response (IVR) phone menus.
 
@@ -45,9 +46,11 @@ For **Deaf, hard-of-hearing, and speech-impaired individuals**, this creates an 
    - **Relay / Emergency Message**: One-click message relay with optional browser-verified GPS location sharing and explicit user consent.
 3. **Two-Phase Custom Call Flow (MCP-Powered)**:
    - For open-ended needs, an interactive planning assistant asks clarifying questions one by one. Once ready, it synthesizes an editable script for human review before execution.
-4. **Multi-Region & Native Language Support**:
+4. **Multi-Vendor Comparison Calls**:
+   - For quote-shopping tasks (contractors, service providers, and similar), CALL-E calls 2+ vendors in parallel, asks each the same structured questions, and uses Gemini to synthesize an explainable recommendation of which vendor to go with — with a full per-vendor breakdown shown alongside the pick.
+5. **Multi-Region & Native Language Support**:
    - Full international phone handling across Pakistan (`PK`), United States (`US`), United Kingdom (`GB`), India (`IN`), and UAE (`AE`) with multi-lingual voice delivery in English and Urdu (`ur`).
-5. **Calm, High-Polish Design**:
+6. **Calm, High-Polish Design**:
    - Styled with intentionality inspired by Linear and Stripe. Avoids gimmicky AI tropes (no sci-fi neon orbs, space backgrounds, or purple glows) in favor of clear typography (Geist), accessible color contrast, and intuitive feedback.
 
 ---
@@ -63,10 +66,11 @@ For **Deaf, hard-of-hearing, and speech-impaired individuals**, this creates an 
 3. **Interactive Call Formulation**:
    - *Via Guided Template*: Strict Zod schemas format the objective deterministically into natural speech tasks.
    - *Via Two-Phase MCP*: The Model Context Protocol broker connects with CALL-E's `plan_call` tool, clarifying ambiguous user requests until `ready_to_run: true`.
+   - *Via Vendor Comparison*: The user defines the job, the questions every vendor should be asked, and 2+ vendors to contact; CALL-E dials each vendor in parallel with the same task script.
 4. **Human Review & Dispatch**: The user inspects the final task prompt and approves the call. The backend calls `client.calls.create(...)` via the `@call-e/calle` SDK.
-5. **Real-World Telephony Execution**: The CALL-E telephony agent dials the recipient phone, conducts the conversation with low-latency speech-to-speech AI, and records structured evidence.
-6. **Idempotent Webhook Processing**: CALL-E posts the completion payload to `/api/calle/webhook`. Upstash Redis deduplicates delivery via `SET NX` locks and caches the outcome.
-7. **Evidence Presentation**: The frontend polls `/api/calle/call-status` and renders a clean, human-readable summary with extracted evidence and quota status.
+5. **Real-World Telephony Execution**: The CALL-E telephony agent dials the recipient phone(s), conducts the conversation with low-latency speech-to-speech AI, and records structured evidence per recipient.
+6. **Idempotent Webhook Processing**: CALL-E posts the completion payload to `/api/call-e/webhook`. Upstash Redis deduplicates delivery via `SET NX` locks and caches the outcome. For vendor comparison calls, this step also triggers Gemini-based scoring of all recipient responses before the record is marked complete.
+7. **Evidence Presentation**: The frontend polls `/api/call-e/call-status` and renders a clean, human-readable summary with extracted evidence and quota status — or, for vendor comparisons, a recommended vendor plus a side-by-side breakdown of every vendor's answers.
 
 ---
 

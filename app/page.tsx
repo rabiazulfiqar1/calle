@@ -114,7 +114,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 6 Interactive Voice Proxy Module Cards */}
+            {/* 7 Interactive Voice Proxy Module Cards */}
             <div className="space-y-space-base">
               <div className="flex items-center justify-between">
                 <div>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <span className="font-mono-code text-mono-code text-on-surface-variant">
-                  6 Available Flows
+                  7 Available Flows
                 </span>
               </div>
 
@@ -192,7 +192,36 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
-                {/* Card 3: Check Order Status */}
+                {/* Card 3: Compare Vendors */}
+                <Link
+                  href="/vendor-comparison"
+                  className="group relative flex flex-col justify-between p-5 rounded-xl bg-surface-container-lowest border border-border-hairline shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
+                >
+                  <div className="space-y-space-md">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-lg bg-surface-subtle flex items-center justify-center text-on-surface group-hover:bg-primary-subtle group-hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined text-[20px]">call_split</span>
+                      </div>
+                      <span className="material-symbols-outlined text-[18px] text-outline opacity-0 group-hover:opacity-100 transition-opacity">
+                        arrow_forward
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-card-title text-card-title text-on-surface group-hover:text-primary transition-colors">
+                        Compare Vendors
+                      </h3>
+                      <p className="font-body-base text-body-base text-on-surface-variant mt-1.5 leading-relaxed">
+                        CALL-E calls multiple vendors at once, asks each the same questions, and recommends the best fit.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-space-lg pt-space-md border-t border-surface-container-low flex items-center gap-space-xs font-label-caps text-label-caps uppercase text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[14px]">smart_toy</span>
+                    <span>AI-Ranked Comparison</span>
+                  </div>
+                </Link>
+
+                {/* Card 4: Check Order Status */}
                 <Link
                   href="/templates?t=order_status"
                   className="group relative flex flex-col justify-between p-5 rounded-xl bg-surface-container-lowest border border-border-hairline shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
@@ -221,7 +250,7 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
-                {/* Card 4: Relay a Message */}
+                {/* Card 5: Relay a Message */}
                 <Link
                   href="/test-emergency"
                   className="group relative flex flex-col justify-between p-5 rounded-xl bg-surface-container-lowest border border-border-hairline shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
@@ -250,7 +279,7 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
-                {/* Card 5: Cancel a Service */}
+                {/* Card 6: Cancel a Service */}
                 <Link
                   href="/templates?t=cancellation"
                   className="group relative flex flex-col justify-between p-5 rounded-xl bg-surface-container-lowest border border-border-hairline shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
@@ -279,7 +308,7 @@ export default function DashboardPage() {
                   </div>
                 </Link>
 
-                {/* Card 6: Elder Check-in */}
+                {/* Card 7: Elder Check-in */}
                 <Link
                   href="/templates?t=elder_checkup"
                   className="group relative flex flex-col justify-between p-5 rounded-xl bg-surface-container-lowest border border-border-hairline shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer"
