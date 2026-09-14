@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/templates", label: "Templates" },
   { href: "/call", label: "Custom Call" },
   { href: "/test-emergency", label: "Relay Message" },
+  { href: "/demo", label: "Demo" },
 ];
 
 export default function Nav() {
