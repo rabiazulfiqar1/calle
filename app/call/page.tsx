@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import Nav from "@/app/components/Nav";
-import StatusBadge from "@/app/components/StatusBadge";
-import CallResult from "@/app/components/CallResult";
 import PhoneInput from "@/app/components/PhoneInput";
+import CallResult from "@/app/components/CallResult";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -53,8 +52,8 @@ const REGIONS = [
 ];
 
 const LOCALES = [
-  { value: "en", label: "English" },
-  { value: "ur", label: "Urdu" },
+  { value: "en", label: "English (US) - Warm Business Formal" },
+  { value: "ur", label: "Urdu (Standard) - Respectful Formal" },
 ];
 
 // ── Main Page ─────────────────────────────────────────────────────────────
@@ -66,6 +65,7 @@ export default function CustomCallPage() {
   const [phase, setPhase] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
   const [quotaRemaining, setQuotaRemaining] = useState<number | undefined>();
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
 
   const [cycle1, setCycle1] = useState<CycleState>(emptyCycle());
   const [cycle2, setCycle2] = useState<CycleState>(emptyCycle());
@@ -79,7 +79,7 @@ export default function CustomCallPage() {
     else setCycle2(updater);
   }
 
-  // Derive the current UI step
+  // Derive the current UI step (unchanged logic)
   function currentStep(): Step {
     const c = activeCycle();
     if (c.callResult) return "result";
@@ -90,7 +90,7 @@ export default function CustomCallPage() {
     return "compose";
   }
 
-  // ── MCP: plan call ───────────────────────────────────────────────────────
+  // ── MCP: plan call (unchanged) ───────────────────────────────────────────
 
   async function callPlan(refinement?: string) {
     const cycle = activeCycle();
@@ -153,7 +153,7 @@ export default function CustomCallPage() {
     }
   }
 
-  // ── Place call (create + poll) ──────────────────────────────────────────
+  // ── Place call (create + poll) (unchanged) ──────────────────────────────
 
   async function placeCall() {
     const cycle = activeCycle();
@@ -229,7 +229,7 @@ export default function CustomCallPage() {
     setActiveCycle((c) => ({ ...c, placing: false, timedOut: true }));
   }
 
-  // ── Phase 2 ──────────────────────────────────────────────────────────────
+  // ── Phase 2 (unchanged) ──────────────────────────────────────────────────
 
   function proceedToPhase2() {
     const result = cycle1.callResult ?? {};
@@ -270,428 +270,811 @@ export default function CustomCallPage() {
   const cycle = activeCycle();
   const step = currentStep();
 
-  const STEPS: { id: Step; label: string }[] = [
-    { id: "compose", label: "Describe" },
-    { id: "clarify", label: "Answer" },
-    { id: "review", label: "Review" },
-    { id: "calling", label: "Calling" },
-    { id: "result", label: "Done" },
-  ];
-
-  const stepOrder: Step[] = ["compose", "clarify", "review", "calling", "result"];
+  const stepIndex =
+    step === "compose" ? 1 : step === "clarify" ? 2 : step === "review" ? 3 : step === "calling" ? 4 : 5;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-surface font-body-base text-on-surface antialiased">
       <Nav />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Custom Call</h1>
-            {phase === 2 && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
-                Confirmation call
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-zinc-500">
-            Describe what you need in plain language. CALL-E plans, then you approve before anything is dialed.
-          </p>
-        </div>
-
-        {/* Step indicator */}
-        <StepIndicator steps={STEPS} currentStep={step} stepOrder={stepOrder} />
-
-        {/* Recipient (shown only in compose step of phase 1) */}
-        {step === "compose" && phase === 1 && (
-          <div className="mt-6 rounded-xl border border-zinc-200 overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50">
-              <h2 className="text-sm font-semibold text-zinc-800">Who should CALL-E call?</h2>
-            </div>
-            <div className="px-5 py-5 flex flex-col gap-4">
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-1.5">
-                  Phone number{" "}
-                  <span className="text-xs text-zinc-400 font-normal">— select country code, then type number</span>
-                </label>
-                <PhoneInput
-                  id="phone"
-                  phone={phone}
-                  region={region}
-                  onChange={(newPhone, newRegion) => {
-                    setPhone(newPhone);
-                    setRegion(newRegion);
-                  }}
+      <main className="w-full pt-16 bg-surface min-h-screen">
+        <div className="flex flex-col w-full">
+          <div className="max-w-5xl mx-auto w-full px-margin py-space-xl flex flex-col gap-space-2xl">
+            {/* Top Stepper Bar */}
+            <div className="w-full bg-surface-container-lowest rounded-xl shadow-xs border border-border-hairline p-space-base flex flex-col md:flex-row md:items-center justify-between gap-space-base">
+              <div className="flex items-center justify-between w-full overflow-x-auto pb-space-xs md:pb-0">
+                {/* Step 1: Describe */}
+                <div className="flex items-center gap-space-sm shrink-0">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shadow-xs ${
+                      stepIndex > 1
+                        ? "bg-success text-on-primary"
+                        : stepIndex === 1
+                        ? "bg-primary text-on-primary ring-4 ring-primary-subtle"
+                        : "bg-surface-container-high text-on-surface-variant"
+                    }`}
+                  >
+                    {stepIndex > 1 ? (
+                      <span className="material-symbols-outlined text-[16px]">check</span>
+                    ) : (
+                      <span className="font-card-title text-card-title">1</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
+                      Step 1
+                    </span>
+                    <span className="font-card-title text-card-title text-on-surface">Describe</span>
+                  </div>
+                </div>
+                <div
+                  className={`h-0.5 w-6 sm:w-12 rounded-full mx-2 shrink-0 ${
+                    stepIndex > 1 ? "bg-success" : "bg-surface-container-high"
+                  }`}
                 />
-              </div>
-              <div className="w-full sm:w-48">
-                <label htmlFor="locale" className="block text-sm font-medium text-zinc-700 mb-1.5">Language</label>
-                <select id="locale" value={locale} onChange={(e) => setLocale(e.target.value)} className={inputCls}>
-                  {LOCALES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Phase 2 context card */}
-        {phase === 2 && phase1Context && (
-          <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 overflow-hidden">
-            <div className="px-5 py-3 border-b border-zinc-200">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Context from Phase 1 call
-              </h2>
-            </div>
-            <div className="px-5 py-4 flex flex-col gap-2 text-sm text-zinc-600">
-              <p><span className="font-medium text-zinc-900">Goal:</span> {phase1Context.goal}</p>
-              <p>
-                <span className="font-medium text-zinc-900">Outcome:</span>{" "}
-                {phase1Context.status} — task {phase1Context.taskCompleted ? "completed" : "not completed"}
-              </p>
-              {phase1Context.evidence?.length > 0 && (
-                <ul className="flex flex-col gap-1 mt-1">
-                  {phase1Context.evidence.map((e: string, i: number) => (
-                    <li key={i} className="flex gap-1.5 items-start">
-                      <span className="mt-1.5 w-1 h-1 rounded-full bg-zinc-400 shrink-0" />
-                      {e}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── Step: Compose ── */}
-        {step === "compose" && (
-          <div className="mt-6 flex flex-col gap-4">
-            <div className="rounded-xl border border-zinc-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50">
-                <h2 className="text-sm font-semibold text-zinc-800">What do you need CALL-E to do?</h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Describe it naturally. CALL-E will ask follow-up questions if needed.
-                </p>
-              </div>
-              <div className="px-5 py-5">
-                <textarea
-                  rows={5}
-                  value={cycle.userInput}
-                  onChange={(e) => setActiveCycle((c) => ({ ...c, userInput: e.target.value }))}
-                  placeholder={
-                    phase === 2
-                      ? "Describe what the follow-up call should accomplish…"
-                      : "e.g. Call Dr. Khan's clinic and reschedule my appointment from Friday to next Monday afternoon."
-                  }
-                  className={`${inputCls} resize-y`}
+                {/* Step 2: Clarify */}
+                <div className="flex items-center gap-space-sm shrink-0">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shadow-xs ${
+                      stepIndex > 2
+                        ? "bg-success text-on-primary"
+                        : stepIndex === 2
+                        ? "bg-primary text-on-primary ring-4 ring-primary-subtle"
+                        : "bg-surface-container-high text-on-surface-variant"
+                    }`}
+                  >
+                    {stepIndex > 2 ? (
+                      <span className="material-symbols-outlined text-[16px]">check</span>
+                    ) : (
+                      <span className="font-card-title text-card-title">2</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
+                      Step 2
+                    </span>
+                    <span className="font-card-title text-card-title text-on-surface">Clarify</span>
+                  </div>
+                </div>
+                <div
+                  className={`h-0.5 w-6 sm:w-12 rounded-full mx-2 shrink-0 ${
+                    stepIndex > 2 ? "bg-success" : stepIndex === 2 ? "bg-primary" : "bg-surface-container-high"
+                  }`}
                 />
-              </div>
-            </div>
-            <button
-              onClick={() => callPlan()}
-              disabled={cycle.planning || !cycle.userInput.trim() || !phone.trim()}
-              className={primaryBtn}
-            >
-              {cycle.planning ? (
-                <><LoadingDots />&nbsp;CALL-E is planning…</>
-              ) : (
-                "Plan this call →"
-              )}
-            </button>
-          </div>
-        )}
 
-        {/* ── Step: Clarify ── */}
-        {step === "clarify" && cycle.clarifyingQuestion && (
-          <div className="mt-6 flex flex-col gap-5">
-            {/* Conversation history */}
-            {cycle.qaHistory.length > 0 && (
-              <div className="flex flex-col gap-3">
-                {cycle.qaHistory.map((qa, i) => (
-                  <div key={i} className="flex flex-col gap-2">
-                    <div className="self-start max-w-lg px-4 py-3 rounded-xl bg-zinc-100 text-sm text-zinc-700">
-                      <span className="text-xs font-semibold text-zinc-400 block mb-1">CALL-E asked</span>
-                      {qa.question}
-                    </div>
-                    <div className="self-end max-w-lg px-4 py-3 rounded-xl bg-zinc-900 text-white text-sm">
-                      <span className="text-xs font-semibold text-zinc-400 block mb-1">You answered</span>
-                      {qa.answer}
+                {/* Step 3: Active HITL Gate */}
+                <div className="flex items-center gap-space-sm shrink-0 relative">
+                  <div className="relative flex items-center justify-center">
+                    {stepIndex === 3 && (
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-electric-sky opacity-40 animate-ping" />
+                    )}
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md z-10 ${
+                        stepIndex > 3
+                          ? "bg-success text-on-primary"
+                          : stepIndex === 3
+                          ? "bg-primary text-on-primary ring-4 ring-primary-subtle"
+                          : "bg-surface-container-high text-on-surface-variant"
+                      }`}
+                    >
+                      {stepIndex > 3 ? (
+                        <span className="material-symbols-outlined text-[16px]">check</span>
+                      ) : (
+                        <span className="font-card-title text-card-title">3</span>
+                      )}
                     </div>
                   </div>
-                ))}
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`font-label-caps text-label-caps uppercase font-bold ${
+                          stepIndex === 3 ? "text-primary" : "text-on-surface-variant"
+                        }`}
+                      >
+                        Step 3
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full font-label-caps text-label-caps bg-primary-subtle text-primary border border-primary-glow hidden xl:inline-block">
+                        Human-in-the-Loop Gate
+                      </span>
+                    </div>
+                    <span
+                      className={`font-card-title text-card-title ${
+                        stepIndex === 3 ? "text-primary" : "text-on-surface-variant"
+                      }`}
+                    >
+                      Review
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className={`h-0.5 w-6 sm:w-12 rounded-full mx-2 shrink-0 ${
+                    stepIndex > 3 ? "bg-success" : "bg-surface-container-high"
+                  }`}
+                />
+
+                {/* Step 4: Calling */}
+                <div className="flex items-center gap-space-sm shrink-0">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                      stepIndex === 4
+                        ? "bg-primary text-on-primary ring-4 ring-primary-subtle animate-pulse"
+                        : "bg-surface-container-high text-on-surface-variant"
+                    }`}
+                  >
+                    <span className="font-card-title text-card-title">4</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
+                      Step 4
+                    </span>
+                    <span className="font-card-title text-card-title text-on-surface-variant">Calling</span>
+                  </div>
+                </div>
+                <div className="h-0.5 w-6 sm:w-12 bg-surface-container-high rounded-full mx-2 shrink-0" />
+
+                {/* Step 5: Done */}
+                <div className="flex items-center gap-space-sm shrink-0">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                      stepIndex === 5
+                        ? "bg-success text-on-primary"
+                        : "bg-surface-container-high text-on-surface-variant"
+                    }`}
+                  >
+                    <span className="font-card-title text-card-title">5</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
+                      Step 5
+                    </span>
+                    <span className="font-card-title text-card-title text-on-surface-variant">Done</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Phase 2 context card — restyled, but same data/fields as the original */}
+            {phase === 2 && phase1Context && (
+              <div className="bg-surface-container-lowest rounded-xl shadow-xs border border-border-hairline overflow-hidden">
+                <div className="px-space-lg py-space-sm border-b border-border-hairline bg-surface-subtle">
+                  <h2 className="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant">
+                    Context from Phase 1 call
+                  </h2>
+                </div>
+                <div className="px-space-lg py-space-base flex flex-col gap-space-sm font-body-base text-body-base text-on-surface-variant">
+                  <p>
+                    <span className="font-medium text-on-surface">Goal:</span> {phase1Context.goal}
+                  </p>
+                  <p>
+                    <span className="font-medium text-on-surface">Outcome:</span>{" "}
+                    {phase1Context.status} — task{" "}
+                    {phase1Context.taskCompleted ? "completed" : "not completed"}
+                  </p>
+                  {phase1Context.evidence?.length > 0 && (
+                    <ul className="flex flex-col gap-1 mt-1">
+                      {phase1Context.evidence.map((e: string, i: number) => (
+                        <li key={i} className="flex gap-1.5 items-start">
+                          <span className="mt-1.5 w-1 h-1 rounded-full bg-outline-variant shrink-0" />
+                          {e}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Current question */}
-            <div className="rounded-xl border border-zinc-200 overflow-hidden">
-              <div className="px-5 py-4 bg-zinc-50 border-b border-zinc-100">
-                <div className="flex items-center gap-2 mb-1">
-                  <StatusBadge status="planning" label="CALL-E needs one more detail" />
-                </div>
-                <p className="text-sm text-zinc-800 font-medium mt-2">{cycle.clarifyingQuestion}</p>
-              </div>
-              <ClarifyInput
-                loading={cycle.planning}
-                onSubmit={(val) => callPlan(val)}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── Step: Review ── */}
-        {step === "review" && (
-          <div className="mt-6 flex flex-col gap-5">
-            {/* Q&A history */}
-            {cycle.qaHistory.length > 0 && (
-              <div className="rounded-xl border border-zinc-200 overflow-hidden">
-                <div className="px-5 py-3 border-b border-zinc-100 bg-zinc-50">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Clarified before this call
+            {/* ── STEP 1: Compose ── */}
+            {step === "compose" && (
+              <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-xl flex flex-col gap-space-xl">
+                <div className="flex flex-col gap-space-xs pb-space-md border-b border-border-hairline">
+                  <div className="flex items-center gap-space-sm">
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    <h1 className="font-section-header text-section-header text-on-surface">
+                      State Your Custom Telephony Goal
+                    </h1>
+                  </div>
+                  <p className="font-body-meta text-body-meta text-on-surface-variant">
+                    Describe what you need in natural everyday language. CALL-E will inspect constraints and formulate an approved telephony script.
                   </p>
                 </div>
-                <ul className="px-5 py-4 flex flex-col gap-2">
+
+                <div className="flex flex-col gap-space-lg">
+                  {/* Who to Call — only asked once, in phase 1 (same as original) */}
+                  {phase === 1 && (
+                    <div className="flex flex-col sm:flex-row gap-space-lg">
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                          Destination Phone Number
+                        </label>
+                        <PhoneInput
+                          phone={phone}
+                          region={region}
+                          onChange={(p, r) => {
+                            setPhone(p);
+                            setRegion(r);
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 w-full sm:w-64">
+                        <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                          Language
+                        </label>
+                        <select
+                          value={locale}
+                          onChange={(e) => setLocale(e.target.value)}
+                          className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest"
+                        >
+                          {LOCALES.map((l) => (
+                            <option key={l.value} value={l.value}>
+                              {l.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Objective Textarea */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                      What should CALL-E accomplish on this call?
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={cycle.userInput}
+                      onChange={(e) => setActiveCycle((c) => ({ ...c, userInput: e.target.value }))}
+                      placeholder={
+                        phase === 2
+                          ? "Describe what the follow-up call should accomplish…"
+                          : "e.g. Call Dr. Khan's clinic and reschedule my appointment from Friday to next Monday afternoon."
+                      }
+                      className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest resize-y"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="font-mono-code text-mono-code text-on-surface-variant">
+                      Zero voice anxiety • 100% human approved
+                    </span>
+                    <button
+                      onClick={() => callPlan()}
+                      disabled={cycle.planning || !cycle.userInput.trim() || !phone.trim()}
+                      className="px-6 py-3 rounded-lg bg-primary text-on-primary font-body-medium text-body-medium font-semibold flex items-center gap-2 hover:bg-brand-mark-blue transition-colors shadow-xs disabled:opacity-50"
+                    >
+                      {cycle.planning ? (
+                        <>
+                          <span className="material-symbols-outlined text-[18px] animate-spin">
+                            progress_activity
+                          </span>
+                          <span>CALL-E is planning…</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Plan this call with MCP</span>
+                          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ── STEP 2: Clarify ── */}
+            {step === "clarify" && cycle.clarifyingQuestion && (
+              <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-xl flex flex-col gap-space-xl">
+                <div className="flex items-center justify-between pb-space-md border-b border-border-hairline">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-space-sm">
+                      <span className="w-2.5 h-2.5 rounded-full bg-warning animate-pulse" />
+                      <h1 className="font-section-header text-section-header text-on-surface">
+                        Clarifying Key Parameters
+                      </h1>
+                    </div>
+                    <p className="font-body-meta text-body-meta text-on-surface-variant">
+                      CALL-E detected missing details needed to complete this call successfully.
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium border bg-warning-bg border-warning-border text-warning flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-warning" />
+                    <span>Clarification Needed</span>
+                  </span>
+                </div>
+
+                {/* Q&A Chat bubbles */}
+                <div className="flex flex-col gap-3 py-2">
                   {cycle.qaHistory.map((qa, i) => (
-                    <li key={i} className="text-sm text-zinc-600">
-                      <span className="font-medium text-zinc-900">{qa.question}</span>
-                      {" → "}
-                      {qa.answer}
-                    </li>
+                    <div key={i} className="flex flex-col gap-2">
+                      <div className="self-start max-w-lg px-4 py-3 rounded-xl bg-surface-subtle border border-border-hairline text-sm text-on-surface">
+                        <span className="text-xs font-semibold text-primary block mb-1">CALL-E asked:</span>
+                        {qa.question}
+                      </div>
+                      <div className="self-end max-w-lg px-4 py-3 rounded-xl bg-surface-dark text-canvas-white text-sm">
+                        <span className="text-xs font-semibold text-surface-variant block mb-1">You answered:</span>
+                        {qa.answer}
+                      </div>
+                    </div>
                   ))}
-                </ul>
-              </div>
+
+                  {/* Active Question Box */}
+                  <ClarifyBox
+                    question={cycle.clarifyingQuestion}
+                    loading={cycle.planning}
+                    onSubmit={(val) => callPlan(val)}
+                  />
+                </div>
+              </section>
             )}
 
-            {/* Editable task */}
-            <div className="rounded-xl border border-zinc-200 overflow-hidden">
-              <div className="px-5 py-4 bg-zinc-50 border-b border-zinc-100">
-                <h2 className="text-sm font-semibold text-zinc-800">Review CALL-E&apos;s instructions</h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  This is exactly what CALL-E will be told. Edit freely before approving.
-                </p>
-              </div>
-              <div className="px-5 py-5">
-                <textarea
-                  rows={8}
-                  value={cycle.finalTask}
-                  onChange={(e) => setActiveCycle((c) => ({ ...c, finalTask: e.target.value }))}
-                  className={`${inputCls} resize-y font-mono text-xs`}
-                />
-              </div>
-            </div>
+            {/* ── STEP 3: Active HITL Review Card ── */}
+            {step === "review" && (
+              <section className="bg-surface-container-lowest rounded-xl shadow-md border border-border-hairline p-space-xl flex flex-col gap-space-xl">
+                {/* Card Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pb-space-md border-b border-border-hairline">
+                  <div className="flex flex-col gap-space-xs">
+                    <div className="flex items-center gap-space-sm">
+                      <span className="w-2.5 h-2.5 rounded-full bg-warning animate-pulse" />
+                      <h1 className="font-section-header text-section-header text-on-surface">
+                        Review Call Plan before Dialing
+                      </h1>
+                    </div>
+                    <p className="font-body-meta text-body-meta text-on-surface-variant">
+                      CALL-E synthesized your instructions into an exact voice proxy script. Validate every constraint before telephonic initiation.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-space-sm shrink-0">
+                    <div className="px-3 py-1 rounded-full text-xs font-medium border bg-warning-bg border-warning-border text-warning flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-warning" />
+                      <span className="font-label-caps text-label-caps uppercase tracking-wider">
+                        Awaiting Your Approval
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-            {error && (
-              <div role="alert" className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-                {error}
-              </div>
+                {/* Two-Column Review Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl">
+                  {/* Left Column: Structured Parameters */}
+                  <div className="lg:col-span-5 flex flex-col gap-space-lg">
+                    {/* Recipient Tile */}
+                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-xs shadow-xs border border-border-hairline">
+                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                        Destination Telephony Endpoint
+                      </span>
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-space-sm">
+                          <div className="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+                            <span className="material-symbols-outlined text-[20px]">call</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-mono-phone text-mono-phone text-on-surface">
+                              {phone}
+                            </span>
+                            <span className="font-body-meta text-body-meta text-on-surface-variant">
+                              {REGIONS.find((r) => r.value === region)?.label ?? region}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-success-bg text-success-text text-[11px] font-medium border border-success-border">
+                          Verified Tel
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stated Objective */}
+                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-xs shadow-xs border border-border-hairline">
+                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                        Primary Call Mission
+                      </span>
+                      <p className="font-body-medium text-body-medium text-on-surface mt-1 leading-snug">
+                        {cycle.userInput}
+                      </p>
+                    </div>
+
+                    {/* Clarified Points */}
+                    {cycle.qaHistory.length > 0 && (
+                      <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-sm shadow-xs border border-border-hairline">
+                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                          Clarified before this call
+                        </span>
+                        <ul className="flex flex-col gap-space-sm mt-1">
+                          {cycle.qaHistory.map((qa, i) => (
+                            <li
+                              key={i}
+                              className="flex flex-col gap-0.5 p-2 bg-surface-container-lowest rounded-lg border border-border-hairline"
+                            >
+                              <span className="font-body-medium text-body-medium text-on-surface">
+                                {qa.question}
+                              </span>
+                              <span className="font-mono-code text-mono-code text-on-surface-variant">
+                                {qa.answer}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Guardrails */}
+                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-sm shadow-xs border border-border-hairline">
+                      <div className="flex items-center justify-between">
+                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                          Verified Parameters
+                        </span>
+                        <span className="font-mono-code text-[11px] text-success font-medium">
+                          Active Guardrails
+                        </span>
+                      </div>
+                      <ul className="flex flex-col gap-space-sm mt-1">
+                        <li className="flex items-start gap-space-sm p-2 bg-surface-container-lowest rounded-lg border border-border-hairline">
+                          <span className="material-symbols-outlined text-success text-[18px] mt-0.5 shrink-0">
+                            check_circle
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-body-medium text-body-medium text-on-surface">
+                              Human-in-the-Loop Locked
+                            </span>
+                            <span className="font-mono-code text-mono-code text-on-surface-variant">
+                              Will not deviate from written script
+                            </span>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-space-sm p-2 bg-surface-container-lowest rounded-lg border border-border-hairline">
+                          <span className="material-symbols-outlined text-success text-[18px] mt-0.5 shrink-0">
+                            check_circle
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-body-medium text-body-medium text-on-surface">
+                              Evidence Ledger
+                            </span>
+                            <span className="font-mono-code text-mono-code text-on-surface-variant">
+                              Captures auditable transcript receipts
+                            </span>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* Voice sample (decorative UI only, no call logic) */}
+                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-sm shadow-xs border border-border-hairline">
+                      <div className="flex items-center justify-between">
+                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                          Acoustic Model Synthesis
+                        </span>
+                        <span className="font-mono-code text-[11px] text-primary">
+                          Ultra-Low Latency 24kHz
+                        </span>
+                      </div>
+                      <div className="bg-surface-container-lowest p-space-sm rounded-lg border border-border-hairline flex items-center justify-between">
+                        <div className="flex items-center gap-space-sm">
+                          <button
+                            type="button"
+                            onClick={() => setIsPlayingVoice((v) => !v)}
+                            className="w-9 h-9 rounded-lg bg-surface-dark text-on-primary flex items-center justify-center hover:bg-surface-dark-elevated active:scale-95 transition-transform"
+                            title="Listen to Voice Sample"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">
+                              {isPlayingVoice ? "pause" : "play_arrow"}
+                            </span>
+                          </button>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-body-medium text-body-medium text-on-surface">
+                                Voice: CALL-E Neutral
+                              </span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                            </div>
+                            <span className="font-body-meta text-body-meta text-on-surface-variant">
+                              Calm &amp; Professional Spoken {locale === "ur" ? "Urdu" : "English"}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
+                          graphic_eq
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Editable script */}
+                  <div className="lg:col-span-7 flex flex-col">
+                    <div className="bg-surface-dark rounded-xl p-space-lg flex flex-col gap-space-base h-full relative overflow-hidden shadow-xl border border-surface-dark-border">
+                      <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-primary-glow blur-3xl pointer-events-none" />
+
+                      <div className="flex items-center justify-between border-b border-surface-dark-border pb-space-sm z-10">
+                        <div className="flex items-center gap-space-sm">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-error" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-warning" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-success" />
+                          </div>
+                          <span className="font-mono-code text-[11px] text-outline tracking-wider uppercase ml-2">
+                            telephony_manifest_v2.prompt
+                          </span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-surface-dark-elevated text-primary-fixed text-[11px] font-mono-code border border-surface-dark-border">
+                          Interactive Buffer
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col gap-space-xs z-10 grow">
+                        <div className="flex items-center justify-between text-outline">
+                          <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline-variant">
+                            System Execution Protocol
+                          </span>
+                          <span className="font-label-caps text-label-caps text-electric-sky flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">edit</span>
+                            Editable • These are the exact instructions CALL-E receives
+                          </span>
+                        </div>
+                        <textarea
+                          rows={8}
+                          value={cycle.finalTask}
+                          onChange={(e) => setActiveCycle((c) => ({ ...c, finalTask: e.target.value }))}
+                          spellCheck={false}
+                          className="w-full bg-surface-dark-elevated text-canvas-white font-mono-code text-mono-code p-space-base rounded-lg border border-surface-dark-border focus:outline-none focus:border-electric-sky focus:ring-1 focus:ring-electric-sky transition-all resize-none leading-relaxed"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-mono-code text-outline z-10 pt-1">
+                        <span>Encoding: UTF-8</span>
+                        <span>{cycle.finalTask.length} characters</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Error Banner */}
+                {error && (
+                  <div
+                    role="alert"
+                    className="px-4 py-3 rounded-lg bg-error-bg border border-error-border text-sm text-error-text flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {/* Action Control Footer */}
+                <div className="flex flex-col gap-space-base pt-space-md border-t border-border-hairline">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-space-base">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCycle((c) => ({ ...c, readyToRun: false, planId: null }))}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-subtle text-on-surface border border-border-hairline font-body-medium text-body-medium flex items-center justify-center gap-space-sm shadow-xs"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                      <span>Back to Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={placeCall}
+                      disabled={!cycle.finalTask.trim() || cycle.placing}
+                      className="w-full sm:w-auto px-6 py-3 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-body-medium text-body-medium font-semibold flex items-center justify-center gap-space-sm shadow-md hover:shadow-lg transition-all group disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-[20px] group-hover:rotate-12 transition-transform">
+                        phone_in_talk
+                      </span>
+                      <span>Approve &amp; Place Call →</span>
+                    </button>
+                  </div>
+
+                  <p className="font-body-meta text-body-meta text-on-surface-variant text-center">
+                    This places a real phone call to {phone}. It may take 1–5 minutes.
+                  </p>
+
+                  <div className="flex items-center justify-center gap-space-sm py-2 px-3 bg-surface-subtle rounded-lg text-center border border-border-hairline">
+                    <span className="material-symbols-outlined text-success text-[18px]">lock</span>
+                    <p className="font-body-meta text-body-meta text-on-surface-variant">
+                      CALL-E will never share sensitive medical or payment details beyond what is explicitly approved here.
+                    </p>
+                  </div>
+                </div>
+              </section>
             )}
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <button
-                onClick={placeCall}
-                disabled={!cycle.finalTask.trim()}
-                className={primaryBtn}
-              >
-                <PhoneIcon />
-                Approve &amp; Place Call
-              </button>
-              <p className="text-xs text-zinc-400 max-w-xs">
-                This places a real phone call to {phone}. It may take 1–5 minutes.
-              </p>
-            </div>
-          </div>
-        )}
+            {/* ── STEP 4: Calling In Progress ── */}
+            {step === "calling" && (
+              <section className="bg-surface-container-lowest rounded-xl shadow-md border border-border-hairline p-space-xl flex flex-col items-center justify-center text-center gap-space-lg py-16">
+                <div className="relative flex items-center justify-center">
+                  {!cycle.timedOut && (
+                    <span className="absolute w-20 h-20 rounded-full bg-primary-subtle animate-ping" />
+                  )}
+                  <div className="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg relative z-10">
+                    <span className="material-symbols-outlined text-[32px] animate-pulse">
+                      phone_in_talk
+                    </span>
+                  </div>
+                </div>
 
-        {/* ── Step: Calling ── */}
-        {step === "calling" && (
-          <div className="mt-10 flex flex-col items-center gap-6 text-center py-10">
-            <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
-              <CallingAnimation />
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-zinc-900">
-                {cycle.timedOut ? "Still checking on your call…" : "CALL-E is calling…"}
-              </p>
-              <p className="mt-1 text-sm text-zinc-500">
-                {cycle.timedOut
-                  ? "This is taking longer than expected. The call may have already completed."
-                  : `Dialing ${phone}. This usually takes 1–5 minutes.`}
-              </p>
-              {!cycle.timedOut && (
-                <p className="mt-1 text-xs text-zinc-400">Please keep this page open.</p>
-              )}
-              {cycle.timedOut && cycle.callId && (
+                <div className="flex flex-col gap-1 max-w-md">
+                  <h2 className="font-section-header text-section-header text-on-surface">
+                    {cycle.timedOut ? "Still checking on your call…" : `CALL-E is Dialing ${phone}`}
+                  </h2>
+                  <p className="font-body-base text-body-base text-on-surface-variant">
+                    {cycle.timedOut
+                      ? "This is taking longer than expected. The call may have already completed."
+                      : "Your autonomous voice proxy is conversing with the destination. Factual transcripts and evidence will populate automatically."}
+                  </p>
+                  {!cycle.timedOut && (
+                    <p className="font-body-meta text-body-meta text-on-surface-variant">
+                      Please keep this page open.
+                    </p>
+                  )}
+                </div>
+
+                {cycle.timedOut && cycle.callId && (
+                  <button
+                    onClick={() => {
+                      setActiveCycle((c) => ({ ...c, placing: true, timedOut: false }));
+                      pollCallStatus(cycle.callId!);
+                    }}
+                    className="text-sm font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">refresh</span>
+                    Check status again →
+                  </button>
+                )}
+
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary-subtle text-primary text-xs font-mono-code">
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span>Real-time speech synthesis active</span>
+                </div>
+              </section>
+            )}
+
+            {/* ── STEP 5: Call Result ── */}
+            {step === "result" && cycle.callResult && (
+              <section className="flex flex-col gap-space-md">
+                <CallResult result={cycle.callResult} quotaRemaining={quotaRemaining} />
+
+                {phase === 1 && (
+                  <button
+                    onClick={proceedToPhase2}
+                    className="self-start text-sm font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5 pt-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    <span>Start a confirmation call →</span>
+                  </button>
+                )}
+
                 <button
-                  onClick={() => {
-                    setActiveCycle((c) => ({ ...c, placing: true, timedOut: false }));
-                    pollCallStatus(cycle.callId!);
-                  }}
-                  className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  onClick={startOver}
+                  className="self-start text-sm text-on-surface-variant hover:text-on-surface underline underline-offset-2 flex items-center gap-1.5"
                 >
-                  Check status again →
+                  <span className="material-symbols-outlined text-[18px]">refresh</span>
+                  <span>Start a new call</span>
                 </button>
-              )}
-            </div>
-            <StatusBadge status="calling" />
-          </div>
-        )}
-
-        {/* ── Step: Result ── */}
-        {step === "result" && cycle.callResult && (
-          <div className="mt-6 flex flex-col gap-5">
-            <CallResult
-              result={cycle.callResult}
-              quotaRemaining={quotaRemaining}
-            />
-
-            {phase === 1 && (
-              <button
-                onClick={proceedToPhase2}
-                className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                Start a confirmation call →
-              </button>
+              </section>
             )}
 
-            <button
-              onClick={startOver}
-              className="text-sm text-zinc-500 hover:text-zinc-800 underline underline-offset-2 text-left"
-            >
-              Start a new call
-            </button>
-          </div>
-        )}
-
-        {/* Global error */}
-        {error && step !== "review" && (
-          <div role="alert" className="mt-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────
-
-function StepIndicator({
-  steps,
-  currentStep,
-  stepOrder,
-}: {
-  steps: { id: Step; label: string }[];
-  currentStep: Step;
-  stepOrder: Step[];
-}) {
-  const currentIdx = stepOrder.indexOf(currentStep);
-  return (
-    <div className="flex items-center gap-0" aria-label="Progress">
-      {steps.map((s, i) => {
-        const idx = stepOrder.indexOf(s.id);
-        const done = idx < currentIdx;
-        const active = s.id === currentStep;
-        return (
-          <div key={s.id} className="flex items-center">
-            <div className="flex flex-col items-center">
+            {/* Global error (only shown when review step isn't already displaying its own banner) */}
+            {error && step !== "review" && (
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold border transition-colors ${
-                  done
-                    ? "bg-zinc-900 border-zinc-900 text-white"
-                    : active
-                    ? "border-blue-600 text-blue-600 bg-white"
-                    : "border-zinc-300 text-zinc-400 bg-white"
-                }`}
+                role="alert"
+                className="px-4 py-3 rounded-lg bg-error-bg border border-error-border text-sm text-error-text flex items-center gap-2"
               >
-                {done ? <CheckMini /> : <span>{i + 1}</span>}
+                <span className="material-symbols-outlined text-[18px]">error</span>
+                <span>{error}</span>
               </div>
-              <span className={`text-xs mt-1 ${active ? "text-zinc-900 font-medium" : "text-zinc-400"}`}>
-                {s.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={`h-px w-8 sm:w-14 mb-4 mx-1 transition-colors ${done ? "bg-zinc-900" : "bg-zinc-200"}`} />
             )}
+
+            {/* Contextual Telephony Telemetry Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-base">
+              <div className="bg-surface-container-lowest p-space-base rounded-xl shadow-xs border border-border-hairline flex items-center gap-space-base">
+                <div className="w-10 h-10 rounded-lg bg-primary-subtle text-primary flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">hearing_disabled</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-body-meta text-body-meta text-on-surface-variant">
+                    Assistive Identity
+                  </span>
+                  <span className="font-card-title text-card-title text-on-surface">
+                    FCC Relay Compliant Proxy
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-surface-container-lowest p-space-base rounded-xl shadow-xs border border-border-hairline flex items-center gap-space-base">
+                <div className="w-10 h-10 rounded-lg bg-primary-subtle text-primary flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">record_voice_over</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-body-meta text-body-meta text-on-surface-variant">
+                    Transcription Sync
+                  </span>
+                  <span className="font-card-title text-card-title text-on-surface">
+                    Real-Time Live Captioning
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-surface-container-lowest p-space-base rounded-xl shadow-xs border border-border-hairline flex items-center gap-space-base">
+                <div className="w-10 h-10 rounded-lg bg-primary-subtle text-primary flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">shield</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-body-meta text-body-meta text-on-surface-variant">
+                    Emergency Killswitch
+                  </span>
+                  <span className="font-card-title text-card-title text-on-surface">
+                    1-Tap Instant Disconnect
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        );
-      })}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="w-full bg-surface-container-lowest border-t border-border-hairline py-space-xl mt-auto">
+        <div className="max-w-5xl mx-auto px-margin flex flex-col sm:flex-row items-center justify-between gap-space-base">
+          <div className="flex items-center gap-space-sm">
+            <span className="font-card-title text-card-title text-on-surface">Your Voice</span>
+            <span className="font-body-meta text-body-meta text-on-surface-variant">
+              — Autonomous Voice Proxy for Accessibility
+            </span>
+          </div>
+          <div className="flex items-center gap-space-lg font-body-meta text-body-meta text-on-surface-variant">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-success" /> Telephony Node Active
+            </span>
+            <span>© 2025 Your Voice Systems</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function ClarifyInput({ onSubmit, loading }: { onSubmit: (val: string) => void; loading: boolean }) {
+// ── Local sub-component for the clarify input (UI-only; calls back into callPlan) ──
+
+function ClarifyBox({
+  question,
+  loading,
+  onSubmit,
+}: {
+  question: string;
+  loading: boolean;
+  onSubmit: (val: string) => void;
+}) {
   const [val, setVal] = useState("");
   return (
-    <div className="px-5 py-5 flex flex-col gap-3">
-      <input
-        type="text"
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && val.trim()) {
+    <div className="p-4 rounded-xl bg-surface-subtle border border-primary-glow flex flex-col gap-3">
+      <div className="flex items-center gap-2 text-primary font-medium text-sm">
+        <span className="material-symbols-outlined text-[18px]">help</span>
+        <span>{question}</span>
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (val.trim()) {
             onSubmit(val.trim());
             setVal("");
           }
         }}
-        placeholder="Your answer…"
-        className={inputCls}
-        autoFocus
-      />
-      <button
-        onClick={() => { onSubmit(val.trim()); setVal(""); }}
-        disabled={loading || !val.trim()}
-        className={primaryBtn}
+        className="flex gap-2"
       >
-        {loading ? <><LoadingDots />&nbsp;Thinking…</> : "Send answer →"}
-      </button>
+        <input
+          name="refinement"
+          type="text"
+          autoFocus
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          placeholder="Type your clarification..."
+          className="flex-1 bg-surface-container-lowest rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={loading || !val.trim()}
+          className="px-5 py-2.5 rounded-lg bg-primary text-on-primary font-body-medium font-semibold hover:bg-brand-mark-blue transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50"
+        >
+          {loading ? "Saving…" : "Submit →"}
+        </button>
+      </form>
     </div>
-  );
-}
-
-function CallingAnimation() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <path
-        d="M5 10.5A2.5 2.5 0 0 1 7.5 8h1.786a.833.833 0 0 1 .808.632l1.19 4.762a.833.833 0 0 1-.238.828L9.5 15.5a15.88 15.88 0 0 0 7 7l1.278-1.546a.833.833 0 0 1 .828-.238l4.762 1.19a.833.833 0 0 1 .632.808V24.5A2.5 2.5 0 0 1 21.5 27C12.387 27 5 19.613 5 10.5Z"
-        stroke="#0055ff"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="animate-pulse"
-      />
-    </svg>
-  );
-}
-
-// ── Shared ────────────────────────────────────────────────────────────────
-
-const inputCls =
-  "w-full px-3 py-2.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
-
-const primaryBtn =
-  "flex items-center gap-2 px-5 py-2.5 rounded-lg bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
-
-function LoadingDots() {
-  return (
-    <span className="flex gap-0.5" aria-hidden="true">
-      {[0, 1, 2].map((i) => (
-        <span key={i} className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: `${i * 100}ms` }} />
-      ))}
-    </span>
-  );
-}
-
-function PhoneIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M2.5 4A1.5 1.5 0 0 1 4 2.5h1.071a.5.5 0 0 1 .485.379l.714 2.5a.5.5 0 0 1-.143.497L5.2 6.8a8.526 8.526 0 0 0 6 6l.925-1.025a.5.5 0 0 1 .497-.143l2.5.714a.5.5 0 0 1 .378.485V14a1.5 1.5 0 0 1-1.5 1.5C6.82 15.5 2.5 11.18 2.5 4Z" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CheckMini() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-      <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

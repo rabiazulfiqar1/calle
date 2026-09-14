@@ -18,12 +18,12 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "CALL-E",
-    template: "%s — CALL-E",
+    default: "Your Voice — Autonomous Voice Proxy",
+    template: "%s — Your Voice",
   },
   description:
-    "CALL-E makes phone calls on your behalf. Book appointments, check orders, send messages — without speaking a word.",
-  metadataBase: new URL("https://calle.app"),
+    "Your Voice (powered by CALL-E) makes phone calls on your behalf. Autonomous voice proxy for Deaf and speech-impaired individuals.",
+  metadataBase: new URL("https://call-e.vercel.app"),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -32,7 +32,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-zinc-900">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-surface font-body-base text-on-surface antialiased">
         {children}
       </body>
     </html>

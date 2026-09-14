@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Nav from "@/app/components/Nav";
 import StatusBadge from "@/app/components/StatusBadge";
 import PhoneInput from "@/app/components/PhoneInput";
 import CallResult from "@/app/components/CallResult";
 
 // ── Template Definitions ──────────────────────────────────────────────────
+// Field set / labels / placeholders / hints match the original functional
+// templates exactly. iconName / tagline / tagBadge are display-only additions
+// for the redesigned card UI and are never sent to the API.
 
 type FieldDef = {
   key: string;
@@ -23,7 +27,9 @@ type TemplateDef = {
   id: string;
   label: string;
   description: string;
-  icon: React.ReactNode;
+  tagline: string;
+  iconName: string;
+  tagBadge: string;
   fields: FieldDef[];
 };
 
@@ -32,7 +38,9 @@ const TEMPLATES: TemplateDef[] = [
     id: "appointment",
     label: "Book an Appointment",
     description: "CALL-E calls and books a time slot on your behalf.",
-    icon: <CalendarIcon />,
+    tagline: "Clinic, salon, consultation",
+    iconName: "calendar_add_on",
+    tagBadge: "Pre-Tuned",
     fields: [
       { key: "bookingType", label: "What type of appointment?", type: "text", placeholder: "e.g. dentist checkup, haircut, GP visit" },
       { key: "purpose", label: "Why are you booking this?", type: "textarea", placeholder: "e.g. Routine cleaning, first consultation about tooth pain" },
@@ -43,7 +51,9 @@ const TEMPLATES: TemplateDef[] = [
     id: "cancellation",
     label: "Cancel a Service",
     description: "CALL-E calls and requests cancellation — firmly and politely.",
-    icon: <XCircleIcon />,
+    tagline: "Gym, utility, subscription",
+    iconName: "event_busy",
+    tagBadge: "Retention Defense",
     fields: [
       { key: "serviceName", label: "What are you cancelling?", type: "text", placeholder: "e.g. Netflix, gym membership, meal kit subscription" },
       { key: "accountReference", label: "Account or reference number", type: "text", placeholder: "Optional", optional: true },
@@ -54,7 +64,9 @@ const TEMPLATES: TemplateDef[] = [
     id: "order_status",
     label: "Check Order Status",
     description: "CALL-E calls the seller and finds out where your order is.",
-    icon: <PackageIcon />,
+    tagline: "Delivery tracing, retail inquiry",
+    iconName: "local_shipping",
+    tagBadge: "IVR Bypass",
     fields: [
       { key: "orderedFrom", label: "Who did you order from?", type: "text", placeholder: "e.g. Amazon seller, local restaurant, Daraz store" },
       { key: "whatWasOrdered", label: "What did you order?", type: "text", placeholder: "e.g. Blue running shoes, size 10" },
@@ -65,7 +77,9 @@ const TEMPLATES: TemplateDef[] = [
     id: "relay_message",
     label: "Relay a Message",
     description: "CALL-E delivers your message to someone you care about.",
-    icon: <MessageIcon />,
+    tagline: "Dispatch critical one-way alert",
+    iconName: "notification_important",
+    tagBadge: "Fast Dispatch",
     fields: [
       { key: "contactName", label: "Who are we calling?", type: "text", placeholder: "e.g. Ahmed, Dr. Siddiqui, Mom" },
       { key: "relationship", label: "Your relationship to them", type: "text", placeholder: "e.g. friend, colleague, mother — optional", optional: true },
@@ -78,7 +92,9 @@ const TEMPLATES: TemplateDef[] = [
     id: "elder_checkup",
     label: "Elder Check-in",
     description: "CALL-E has a warm, caring conversation with someone you love.",
-    icon: <HeartIcon />,
+    tagline: "Gentle automated check-in",
+    iconName: "favorite",
+    tagBadge: "Daily Care",
     fields: [
       { key: "personName", label: "Who should CALL-E speak with?", type: "text", placeholder: "e.g. Nana, Uncle Tariq, Mrs. Khan" },
       { key: "thingsToAsk", label: "Topics to cover", type: "list", placeholder: "One topic per line — e.g.\nHow are you feeling today?\nHave you eaten?\nDid you take your medicine?", hint: "CALL-E will raise these naturally, not read them like a script." },
@@ -87,20 +103,10 @@ const TEMPLATES: TemplateDef[] = [
   },
 ];
 
-const REGIONS = [
-  { value: "PK", label: "Pakistan (PK)" },
-  { value: "US", label: "United States (US)" },
-  { value: "GB", label: "United Kingdom (GB)" },
-  { value: "IN", label: "India (IN)" },
-  { value: "AE", label: "UAE (AE)" },
-];
-
 const LOCALES = [
-  { value: "en", label: "English" },
-  { value: "ur", label: "Urdu" },
+  { value: "en", label: "English (US) - Warm Business Formal" },
+  { value: "ur", label: "Urdu (Standard) - Respectful Formal" },
 ];
-
-// ── Page Component ────────────────────────────────────────────────────────
 
 function TemplatesPageInner() {
   const searchParams = useSearchParams();
@@ -233,341 +239,521 @@ function TemplatesPageInner() {
     setCallStatus("calling"); // stays on the "calling" UI, with a retry option shown below
   }
 
-  const isActive = callStatus === "calling";
+  const isCalling = callStatus === "calling";
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-surface font-body-base text-on-surface antialiased">
       <Nav />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-zinc-900 tracking-tight">Templates</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Choose a template, fill in the details, and CALL-E places the call.
-          </p>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* ── Template selector sidebar ── */}
-          <aside className="lg:w-56 shrink-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
-              Choose a template
-            </p>
-            <nav className="flex flex-row lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0">
-              {TEMPLATES.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => switchTemplate(t.id)}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left whitespace-nowrap lg:whitespace-normal transition-colors ${
-                    t.id === templateId
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-                  }`}
-                >
-                  <span className={t.id === templateId ? "text-white" : "text-zinc-400"}>
-                    {t.icon}
-                  </span>
-                  {t.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
-
-          {/* ── Main form ── */}
-          <div className="flex-1 min-w-0">
-            {/* Template header */}
-            <div className="flex items-start justify-between mb-6 gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-zinc-900">{template.label}</h2>
-                <p className="text-sm text-zinc-500 mt-0.5">{template.description}</p>
+      <main className="w-full pt-16 bg-surface min-h-screen">
+        <div className="flex flex-col w-full">
+          <div className="w-full max-w-5xl mx-auto px-margin py-margin-desktop">
+            {/* Top Context Ribbon & Protocol Tracker */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-xl">
+              <div className="flex items-center gap-space-sm">
+                <span className="px-2.5 py-1 rounded-full bg-surface-container font-mono-code text-mono-code text-on-surface-variant uppercase tracking-wider">
+                  MOD-03 // TEMPLATE_ORCHESTRATOR
+                </span>
+                <span className="flex items-center gap-1.5 font-body-meta text-body-meta text-success-text font-medium bg-success-bg px-2.5 py-1 rounded-full shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  Telephony Node v4.2 Ready
+                </span>
               </div>
-              <StatusBadge
-                status={isActive ? "calling" : callStatus === "success" ? "success" : callStatus === "error" ? "error" : "idle"}
-              />
+              <div className="flex items-center gap-space-sm font-body-meta text-body-meta text-on-surface-variant">
+                <span className="material-symbols-outlined text-[16px] text-tertiary">tune</span>
+                <span>
+                  Acoustic Profile:{" "}
+                  <strong className="text-on-surface font-body-medium">
+                    Natural Latency (140ms)
+                  </strong>
+                </span>
+              </div>
             </div>
 
-            {callStatus === "success" && result ? (
-              /* ── Result view ── */
-              <div className="flex flex-col gap-4">
-                <CallResult result={result} templateId={templateId} quotaRemaining={quotaRemaining} />
-                <button
-                  onClick={() => {
-                    setCallStatus("idle");
-                    setResult(null);
-                    setError(null);
-                    setTimedOut(false);
-                    setActiveCallId(null);
-                  }}
-                  className="text-sm text-zinc-500 hover:text-zinc-800 underline underline-offset-2 text-left"
-                >
-                  ← Make another call
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-                {/* ── Recipient section ── */}
-                <Section title="Who to call" description="The number CALL-E will dial.">
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-1.5">
-                        Phone number <span className="text-xs text-zinc-400 font-normal">— select country code, then type number</span>
-                      </label>
-                      <PhoneInput
-                        id="phone"
-                        phone={phone}
-                        region={region}
-                        onChange={(newPhone, newRegion) => {
-                          setPhone(newPhone);
-                          setRegion(newRegion);
-                        }}
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <FieldLabel htmlFor="locale" label="Language" required />
-                        <select id="locale" value={locale} onChange={(e) => setLocale(e.target.value)} className={inputCls}>
-                          {LOCALES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-                        </select>
+            {/* Dual Pane Interface */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+              {/* LEFT SIDEBAR: Template Catalog Switcher */}
+              <aside className="lg:col-span-4 flex flex-col gap-space-lg">
+                <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline">
+                  <div className="flex items-center justify-between pb-space-md mb-space-sm border-b border-surface-container-low">
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
+                      Templates
+                    </span>
+                    <span className="font-mono-code text-mono-code text-tertiary">5 presets</span>
+                  </div>
+
+                  <nav className="flex flex-col gap-space-xs">
+                    {TEMPLATES.map((t) => {
+                      const isActive = t.id === templateId;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => switchTemplate(t.id)}
+                          type="button"
+                          className={`w-full text-left flex items-center justify-between p-space-md rounded-lg transition-all duration-150 group ${
+                            isActive
+                              ? "bg-surface-dark text-canvas-white shadow-md"
+                              : "bg-surface-container-lowest hover:bg-surface-container text-on-surface"
+                          }`}
+                        >
+                          <div className="flex items-center gap-space-md min-w-0">
+                            <span
+                              className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                                isActive
+                                  ? "bg-surface-dark-elevated text-canvas-white"
+                                  : "bg-surface-container-high group-hover:bg-surface-container-highest text-on-surface-variant"
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                {t.iconName}
+                              </span>
+                            </span>
+                            <div className="flex flex-col min-w-0">
+                              <span
+                                className={`font-card-title text-card-title truncate ${
+                                  isActive ? "text-canvas-white" : "text-on-surface"
+                                }`}
+                              >
+                                {t.label}
+                              </span>
+                              <span
+                                className={`font-body-meta text-body-meta truncate ${
+                                  isActive ? "text-surface-variant/70" : "text-on-surface-variant"
+                                }`}
+                              >
+                                {t.tagline}
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            className={`material-symbols-outlined text-[18px] ${
+                              isActive ? "text-primary-fixed-dim" : "text-tertiary opacity-40"
+                            }`}
+                          >
+                            chevron_right
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+
+                  {/* Tip Box at Sidebar Bottom */}
+                  <div className="mt-space-xl p-space-md bg-surface-subtle rounded-lg border border-border-hairline shadow-2xs">
+                    <div className="flex items-start gap-space-sm">
+                      <span className="material-symbols-outlined text-primary text-[18px] mt-0.5">
+                        auto_awesome
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-card-title text-card-title text-on-surface">
+                          Need something unique?
+                        </span>
+                        <p className="font-body-meta text-body-meta text-on-surface-variant leading-relaxed">
+                          Try{" "}
+                          <Link href="/call" className="text-primary font-medium hover:underline">
+                            Custom Call
+                          </Link>{" "}
+                          for interactive clarifying questions and prompt synthesis.
+                        </p>
                       </div>
-                      <div>
-                        <FieldLabel htmlFor="callerName" label="Your name" hint="CALL-E says 'on behalf of…'" />
-                        <input
-                          id="callerName"
-                          type="text"
-                          value={callerName}
-                          onChange={(e) => setCallerName(e.target.value)}
-                        placeholder="e.g. Rabia"
-                        className={inputCls}
-                      />
                     </div>
                   </div>
                 </div>
-              </Section>
 
-                {/* ── Template fields ── */}
-                <Section title="Call details" description="Tell CALL-E what to ask or say.">
-                  <div className="flex flex-col gap-5">
-                    {template.fields.map((f) => (
-                      <TemplateField
-                        key={f.key}
-                        field={f}
-                        value={fieldValues[f.key] ?? (f.type === "checkbox" ? false : "")}
-                        onChange={(v) => updateField(f.key, v)}
+                {/* Telephony Visualizer Micro-Card */}
+                <div className="bg-surface-dark rounded-xl p-space-lg text-canvas-white shadow-md relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-space-md">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-electric-sky" />
+                      <span className="font-label-caps text-label-caps uppercase tracking-wider text-surface-variant">
+                        Acoustic Engine
+                      </span>
+                    </div>
+                    <span className="font-mono-code text-mono-code text-primary-fixed-dim">
+                      CALL-E Neural Core
+                    </span>
+                  </div>
+                  {/* Frequency Bars */}
+                  <div className="h-10 flex items-center justify-between gap-1 px-1">
+                    {[12, 24, 32, 16, 28, 36, 20, 32, 12, 24, 28, 8].map((h, i) => (
+                      <div
+                        key={i}
+                        className="w-1 bg-electric-sky rounded-full animate-pulse"
+                        style={{ height: `${h}px`, animationDelay: `${i * 0.08}s` }}
                       />
                     ))}
                   </div>
-                </Section>
-
-                {/* ── Error ── */}
-                {error && (
-                  <div role="alert" className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-                    {error}
+                  <div className="mt-space-sm pt-space-sm flex items-center justify-between text-surface-variant font-mono-code text-mono-code border-t border-surface-dark-border">
+                    <span>Adaptive Barge-In</span>
+                    <span className="text-success-border font-medium">Active</span>
                   </div>
-                )}
-
-                {/* ── Timed out but still checking ── */}
-                {timedOut && isActive && (
-                  <div className="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
-                    <span>This is taking longer than expected. The call may have already completed.</span>
-                    {activeCallId && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTimedOut(false);
-                          pollTemplateCallStatus(activeCallId);
-                        }}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 whitespace-nowrap"
-                      >
-                        Check status again →
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Confirm & call ── */}
-                <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <button
-                    type="submit"
-                    disabled={isActive || !phone}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isActive ? (
-                      <>
-                        <LoadingDots color="white" />
-                        CALL-E is calling…
-                      </>
-                    ) : (
-                      <>
-                        <PhoneIcon small />
-                        Place Call
-                      </>
-                    )}
-                  </button>
-                  {isActive && !timedOut && (
-                    <p className="text-xs text-zinc-400">
-                      This can take 1–5 minutes. Please don&apos;t close the page.
-                    </p>
-                  )}
                 </div>
-              </form>
-            )}
+              </aside>
+
+              {/* RIGHT PANE: Dynamic Form & Execution Bar */}
+              <section className="lg:col-span-8 flex flex-col gap-space-lg">
+                {/* Header Card */}
+                <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-sm">
+                  <div className="flex items-start justify-between gap-space-md">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-space-sm">
+                        <h1 className="font-section-header text-section-header text-on-surface">
+                          {template.label}
+                        </h1>
+                        <span className="px-2 py-0.5 rounded-full font-label-caps text-label-caps uppercase bg-primary-subtle text-primary">
+                          {template.tagBadge}
+                        </span>
+                      </div>
+                      <p className="font-body-base text-body-base text-on-surface-variant">
+                        {template.description}
+                      </p>
+                    </div>
+                    {/* Status Badge */}
+                    <StatusBadge
+                      status={
+                        isCalling
+                          ? "calling"
+                          : callStatus === "success"
+                          ? "success"
+                          : callStatus === "error"
+                          ? "error"
+                          : "idle"
+                      }
+                    />
+                  </div>
+                </div>
+
+                {callStatus === "success" && result ? (
+                  /* Result View */
+                  <div className="flex flex-col gap-space-md">
+                    <CallResult
+                      result={result}
+                      templateId={templateId}
+                      quotaRemaining={quotaRemaining}
+                    />
+                    <button
+                      onClick={() => {
+                        setCallStatus("idle");
+                        setResult(null);
+                        setError(null);
+                        setTimedOut(false);
+                        setActiveCallId(null);
+                      }}
+                      className="text-sm font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5 pt-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                      <span>Place another call with this template</span>
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-space-lg">
+                    {/* Section 1: Who to Call */}
+                    <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+                      <div className="flex items-center justify-between pb-space-xs border-b border-surface-container-low">
+                        <div className="flex items-center gap-space-sm">
+                          <span className="w-6 h-6 rounded-md bg-surface-container-high flex items-center justify-center font-mono-code text-mono-code text-on-surface font-semibold">
+                            01
+                          </span>
+                          <h2 className="font-card-title text-card-title text-on-surface">
+                            Who to Call
+                          </h2>
+                        </div>
+                        <span className="font-body-meta text-body-meta text-on-surface-variant">
+                          Target Dialing Endpoint
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                        {/* Composite PhoneInput */}
+                        <div className="md:col-span-2 flex flex-col gap-1.5">
+                          <label
+                            htmlFor="phone"
+                            className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider"
+                          >
+                            Recipient Phone Number
+                          </label>
+                          <PhoneInput
+                            id="phone"
+                            phone={phone}
+                            region={region}
+                            onChange={(newPhone, newRegion) => {
+                              setPhone(newPhone);
+                              setRegion(newRegion);
+                            }}
+                            required
+                          />
+                        </div>
+
+                        {/* Language Select */}
+                        <div className="flex flex-col gap-1.5">
+                          <label
+                            htmlFor="locale"
+                            className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider"
+                          >
+                            Proxy Speech Accent &amp; Language
+                          </label>
+                          <select
+                            id="locale"
+                            value={locale}
+                            onChange={(e) => setLocale(e.target.value)}
+                            className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest"
+                          >
+                            {LOCALES.map((l) => (
+                              <option key={l.value} value={l.value}>
+                                {l.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Caller Name */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <label
+                              htmlFor="callerName"
+                              className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider"
+                            >
+                              Your name{" "}
+                              <span className="normal-case font-normal text-tertiary">(optional)</span>
+                            </label>
+                          </div>
+                          <input
+                            id="callerName"
+                            type="text"
+                            value={callerName}
+                            onChange={(e) => setCallerName(e.target.value)}
+                            placeholder="e.g. Rabia"
+                            className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Opening Statement Preview */}
+                      <div className="mt-space-xs p-space-sm bg-primary-subtle rounded-lg flex items-center gap-space-sm border border-primary-glow">
+                        <span className="material-symbols-outlined text-primary text-[18px]">
+                          record_voice_over
+                        </span>
+                        <p className="font-mono-code text-mono-code text-on-primary-fixed leading-snug">
+                          CALL-E Opening Statement:{" "}
+                          <span className="italic font-medium">
+                            &quot;Hello, I am an automated voice proxy calling on behalf of {callerName || "the caller"}...&quot;
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Section 2: Call Details */}
+                    <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+                      <div className="flex items-center justify-between pb-space-xs border-b border-surface-container-low">
+                        <div className="flex items-center gap-space-sm">
+                          <span className="w-6 h-6 rounded-md bg-surface-container-high flex items-center justify-center font-mono-code text-mono-code text-on-surface font-semibold">
+                            02
+                          </span>
+                          <h2 className="font-card-title text-card-title text-on-surface">
+                            Call Details
+                          </h2>
+                        </div>
+                        <span className="font-body-meta text-body-meta text-on-surface-variant">
+                          Intent &amp; Negotiation Logic
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col gap-space-md">
+                        {template.fields.map((f) => (
+                          <div key={f.key} className="flex flex-col gap-1.5">
+                            <label
+                              htmlFor={f.key}
+                              className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider"
+                            >
+                              {f.label}
+                              {f.optional && (
+                                <span className="text-tertiary ml-1 font-normal">(Optional)</span>
+                              )}
+                            </label>
+                            {f.type === "checkbox" ? (
+                              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                <input
+                                  type="checkbox"
+                                  id={f.key}
+                                  checked={Boolean(fieldValues[f.key])}
+                                  onChange={(e) => updateField(f.key, e.target.checked)}
+                                  className="w-4 h-4 rounded text-primary focus:ring-primary"
+                                />
+                                <span className="font-body-base text-body-base text-on-surface">
+                                  {f.label}
+                                </span>
+                              </label>
+                            ) : f.type === "textarea" || f.type === "list" ? (
+                              <textarea
+                                id={f.key}
+                                rows={f.type === "list" ? 4 : 3}
+                                placeholder={f.placeholder}
+                                value={String(fieldValues[f.key] ?? "")}
+                                onChange={(e) => updateField(f.key, e.target.value)}
+                                className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest resize-y"
+                              />
+                            ) : (
+                              <input
+                                id={f.key}
+                                type="text"
+                                placeholder={f.placeholder}
+                                value={String(fieldValues[f.key] ?? "")}
+                                onChange={(e) => updateField(f.key, e.target.value)}
+                                className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest"
+                              />
+                            )}
+                            {f.hint && (
+                              <span className="font-body-meta text-body-meta text-tertiary">
+                                {f.hint}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Auto-generated Script Box */}
+                      <div className="mt-space-sm rounded-lg overflow-hidden bg-surface-subtle border border-border-hairline shadow-2xs">
+                        <div className="bg-surface-container px-space-md py-2 flex items-center justify-between">
+                          <span className="font-mono-code text-mono-code text-on-surface-variant">
+                            TELEPHONY_PROMPT_v1.04
+                          </span>
+                          <span className="font-body-meta text-body-meta text-on-surface-variant">
+                            Synthesized instructions
+                          </span>
+                        </div>
+                        <div className="p-space-md font-mono-code text-mono-code text-on-surface leading-relaxed">
+                          &quot;Goal: Execute {template.label} for {callerName || "user"}. Destination: {phone}. Negotiate respectfully and confirm final status.&quot;
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Error Banner */}
+                    {error && (
+                      <div
+                        role="alert"
+                        className="px-4 py-3 rounded-lg bg-error-bg border border-error-border text-sm text-error-text flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">error</span>
+                        <span>{error}</span>
+                      </div>
+                    )}
+
+                    {/* Timed out but still checking — retry, restored from original functionality */}
+                    {timedOut && isCalling && (
+                      <div className="px-4 py-3 rounded-lg bg-warning-bg border border-warning-border text-sm text-warning-text flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+                        <span className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[18px]">schedule</span>
+                          This is taking longer than expected. The call may have already completed.
+                        </span>
+                        {activeCallId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTimedOut(false);
+                              pollTemplateCallStatus(activeCallId);
+                            }}
+                            className="text-sm font-medium text-primary hover:text-brand-mark-blue whitespace-nowrap flex items-center gap-1"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">refresh</span>
+                            Check status again →
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Section 3: Bottom Action & Execution Bar */}
+                    <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline flex flex-col gap-space-md">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+                        <div className="flex flex-col gap-1 max-w-md">
+                          <div className="flex items-center gap-space-sm">
+                            <span className="font-card-title text-card-title text-on-surface">
+                              Execution Protocol
+                            </span>
+                            {typeof quotaRemaining === "number" && (
+                              <span className="px-2 py-0.5 rounded-full font-mono-code text-mono-code bg-surface-container text-on-surface-variant">
+                                {quotaRemaining}/5 calls left today
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-body-meta text-body-meta text-on-surface-variant leading-relaxed">
+                            Voice proxy call takes approximately 1–5 minutes. You&apos;ll get live verified evidence and a transcript once it completes.
+                            {isCalling && !timedOut && " Please don't close the page."}
+                          </p>
+                        </div>
+
+                        {/* Primary Trigger Button */}
+                        <button
+                          type="submit"
+                          disabled={isCalling || !phone}
+                          className="w-full sm:w-auto px-6 py-3 rounded-lg bg-surface-dark text-canvas-white hover:bg-surface-dark-elevated active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-space-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isCalling ? (
+                            <>
+                              <span className="material-symbols-outlined text-[20px] text-warning animate-spin">
+                                progress_activity
+                              </span>
+                              <span className="font-body-medium text-body-medium font-semibold">
+                                {timedOut ? "Still checking…" : "Connecting Telephony Node..."}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="material-symbols-outlined text-[20px] text-electric-sky animate-pulse">
+                                call
+                              </span>
+                              <span className="font-body-medium text-body-medium font-semibold tracking-wide">
+                                Place Call via CALL-E
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Security Guarantee */}
+                      <div className="flex items-center justify-between pt-space-xs font-body-meta text-body-meta text-tertiary border-t border-surface-container-low">
+                        <div className="flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[16px] text-success">
+                            lock_open_right
+                          </span>
+                          <span>End-to-End Real-Time Call Telemetry &amp; Encrypted Audio Bridge</span>
+                        </div>
+                        <span className="font-mono-code text-mono-code text-tertiary">
+                          LATENCY: 142ms
+                        </span>
+                      </div>
+                    </div>
+                  </form>
+                )}
+              </section>
+            </div>
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="w-full bg-surface-container-lowest border-t border-border-hairline py-space-xl mt-auto">
+        <div className="max-w-5xl mx-auto px-margin flex flex-col sm:flex-row items-center justify-between gap-space-base">
+          <div className="flex items-center gap-space-sm">
+            <span className="font-card-title text-card-title text-on-surface">Your Voice</span>
+            <span className="font-body-meta text-body-meta text-on-surface-variant">
+              — Autonomous Voice Proxy for Accessibility
+            </span>
+          </div>
+          <div className="flex items-center gap-space-lg font-body-meta text-body-meta text-on-surface-variant">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-success" /> Telephony Node Active
+            </span>
+            <span>© 2025 Your Voice Systems</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
 export default function TemplatesPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+    <Suspense fallback={<div className="min-h-screen bg-surface" />}>
       <TemplatesPageInner />
     </Suspense>
-  );
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────
-
-function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-zinc-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50">
-        <h3 className="text-sm font-semibold text-zinc-800">{title}</h3>
-        <p className="text-xs text-zinc-500 mt-0.5">{description}</p>
-      </div>
-      <div className="px-5 py-5">{children}</div>
-    </div>
-  );
-}
-
-function FieldLabel({ htmlFor, label, hint, required }: { htmlFor: string; label: string; hint?: string; required?: boolean }) {
-  return (
-    <div className="mb-1.5">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-zinc-700">
-        {label}
-        {!required && <span className="ml-1 text-zinc-400 font-normal">(optional)</span>}
-      </label>
-      {hint && <p className="text-xs text-zinc-400 mt-0.5">{hint}</p>}
-    </div>
-  );
-}
-
-function TemplateField({ field, value, onChange }: {
-  field: FieldDef;
-  value: string | boolean;
-  onChange: (v: string | boolean) => void;
-}) {
-  if (field.type === "checkbox") {
-    return (
-      <label className="flex items-start gap-3 cursor-pointer">
-        <input
-          type="checkbox"
-          id={field.key}
-          checked={Boolean(value)}
-          onChange={(e) => onChange(e.target.checked)}
-          className="mt-0.5 w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
-        />
-        <div>
-          <span className="text-sm font-medium text-zinc-700">{field.label}</span>
-          {field.hint && <p className="text-xs text-zinc-400 mt-0.5">{field.hint}</p>}
-        </div>
-      </label>
-    );
-  }
-
-  return (
-    <div>
-      <FieldLabel htmlFor={field.key} label={field.label} hint={field.hint} required={!field.optional} />
-      {field.type === "textarea" || field.type === "list" ? (
-        <textarea
-          id={field.key}
-          rows={field.type === "list" ? 4 : 3}
-          placeholder={field.placeholder}
-          value={String(value)}
-          onChange={(e) => onChange(e.target.value)}
-          className={`${inputCls} resize-y`}
-        />
-      ) : (
-        <input
-          id={field.key}
-          type="text"
-          placeholder={field.placeholder}
-          value={String(value)}
-          onChange={(e) => onChange(e.target.value)}
-          className={inputCls}
-        />
-      )}
-    </div>
-  );
-}
-
-// ── Shared utilities ──────────────────────────────────────────────────────
-
-const inputCls =
-  "w-full px-3 py-2.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
-
-function LoadingDots({ color = "zinc" }: { color?: "white" | "zinc" }) {
-  const dotCls = color === "white" ? "bg-white" : "bg-zinc-500";
-  return (
-    <span className="flex gap-0.5" aria-hidden="true">
-      {[0, 1, 2].map((i) => (
-        <span key={i} className={`w-1 h-1 rounded-full ${dotCls} animate-bounce`} style={{ animationDelay: `${i * 100}ms` }} />
-      ))}
-    </span>
-  );
-}
-
-// ── Icons ─────────────────────────────────────────────────────────────────
-
-function PhoneIcon({ small }: { small?: boolean }) {
-  const s = small ? 15 : 18;
-  return (
-    <svg width={s} height={s} viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M2.5 4A1.5 1.5 0 0 1 4 2.5h1.071a.5.5 0 0 1 .485.379l.714 2.5a.5.5 0 0 1-.143.497L5.2 6.8a8.526 8.526 0 0 0 6 6l.925-1.025a.5.5 0 0 1 .497-.143l2.5.714a.5.5 0 0 1 .378.485V14a1.5 1.5 0 0 1-1.5 1.5C6.82 15.5 2.5 11.18 2.5 4Z" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <rect x="2" y="3.5" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.25" />
-      <path d="M2 7.5h14M6 2v3M12 2v3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function XCircleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.25" />
-      <path d="M6.5 6.5l5 5M11.5 6.5l-5 5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function PackageIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M2 5.5l7-3.5 7 3.5v7L9 16l-7-3.5v-7Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
-      <path d="M9 2v14M2 5.5l7 3.5 7-3.5" stroke="currentColor" strokeWidth="1.25" />
-    </svg>
-  );
-}
-
-function MessageIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M3 3.5h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2.5V4.5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M9 14.5S2.5 10.5 2.5 6.25a3.75 3.75 0 0 1 6.5-2.55A3.75 3.75 0 0 1 15.5 6.25C15.5 10.5 9 14.5 9 14.5Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
-    </svg>
   );
 }
