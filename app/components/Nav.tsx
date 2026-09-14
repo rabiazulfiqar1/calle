@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/templates", label: "Templates" },
   { href: "/call", label: "Custom Call" },
+  { href: "/vendor-comparison", label: "Compare Vendors" },
   { href: "/demo", label: "Demo" },
 ];
 
