@@ -65,7 +65,6 @@ export default function CustomCallPage() {
   const [phase, setPhase] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
   const [quotaRemaining, setQuotaRemaining] = useState<number | undefined>();
-  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
 
   const [cycle1, setCycle1] = useState<CycleState>(emptyCycle());
   const [cycle2, setCycle2] = useState<CycleState>(emptyCycle());
@@ -79,7 +78,7 @@ export default function CustomCallPage() {
     else setCycle2(updater);
   }
 
-  // Derive the current UI step (unchanged logic)
+  // Derive current UI step
   function currentStep(): Step {
     const c = activeCycle();
     if (c.callResult) return "result";
@@ -90,7 +89,7 @@ export default function CustomCallPage() {
     return "compose";
   }
 
-  // ── MCP: plan call (unchanged) ───────────────────────────────────────────
+  // ── MCP: plan call ───────────────────────────────────────────────────────
 
   async function callPlan(refinement?: string) {
     const cycle = activeCycle();
@@ -153,7 +152,7 @@ export default function CustomCallPage() {
     }
   }
 
-  // ── Place call (create + poll) (unchanged) ──────────────────────────────
+  // ── Place call ────────────────────────────────────────────────────────────
 
   async function placeCall() {
     const cycle = activeCycle();
@@ -195,7 +194,7 @@ export default function CustomCallPage() {
 
   async function pollCallStatus(callId: string) {
     const POLL_INTERVAL_MS = 5000;
-    const MAX_ATTEMPTS = 96; // ~8 minutes
+    const MAX_ATTEMPTS = 96;
 
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
@@ -218,9 +217,7 @@ export default function CustomCallPage() {
           setActiveCycle((c) => ({ ...c, placing: false }));
           return;
         }
-        // "queued" / "in_progress" — keep polling
       } catch (err) {
-        // transient network hiccup while polling — keep trying rather than bailing
         continue;
       }
     }
@@ -229,7 +226,7 @@ export default function CustomCallPage() {
     setActiveCycle((c) => ({ ...c, placing: false, timedOut: true }));
   }
 
-  // ── Phase 2 (unchanged) ──────────────────────────────────────────────────
+  // ── Phase 2 ──────────────────────────────────────────────────────────────
 
   function proceedToPhase2() {
     const result = cycle1.callResult ?? {};
@@ -343,7 +340,7 @@ export default function CustomCallPage() {
                   }`}
                 />
 
-                {/* Step 3: Active HITL Gate */}
+                {/* Step 3: Review */}
                 <div className="flex items-center gap-space-sm shrink-0 relative">
                   <div className="relative flex items-center justify-center">
                     {stepIndex === 3 && (
@@ -366,25 +363,10 @@ export default function CustomCallPage() {
                     </div>
                   </div>
                   <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`font-label-caps text-label-caps uppercase font-bold ${
-                          stepIndex === 3 ? "text-primary" : "text-on-surface-variant"
-                        }`}
-                      >
-                        Step 3
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full font-label-caps text-label-caps bg-primary-subtle text-primary border border-primary-glow hidden xl:inline-block">
-                        Human-in-the-Loop Gate
-                      </span>
-                    </div>
-                    <span
-                      className={`font-card-title text-card-title ${
-                        stepIndex === 3 ? "text-primary" : "text-on-surface-variant"
-                      }`}
-                    >
-                      Review
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
+                      Step 3
                     </span>
+                    <span className="font-card-title text-card-title text-on-surface">Review</span>
                   </div>
                 </div>
                 <div
@@ -434,7 +416,8 @@ export default function CustomCallPage() {
               </div>
             </div>
 
-            {/* Phase 2 context card — restyled, but same data/fields as the original */}
+
+            {/* Phase 2 Context Card */}
             {phase === 2 && phase1Context && (
               <div className="bg-surface-container-lowest rounded-xl shadow-xs border border-border-hairline overflow-hidden">
                 <div className="px-space-lg py-space-sm border-b border-border-hairline bg-surface-subtle">
@@ -467,7 +450,7 @@ export default function CustomCallPage() {
 
             {/* ── STEP 1: Compose ── */}
             {step === "compose" && (
-              <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-xl flex flex-col gap-space-xl">
+              <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-lg flex flex-col gap-space-lg">
                 <div className="flex flex-col gap-space-xs pb-space-md border-b border-border-hairline">
                   <div className="flex items-center gap-space-sm">
                     <span className="w-2.5 h-2.5 rounded-full bg-primary" />
@@ -481,7 +464,7 @@ export default function CustomCallPage() {
                 </div>
 
                 <div className="flex flex-col gap-space-lg">
-                  {/* Who to Call — only asked once, in phase 1 (same as original) */}
+                  {/* Destination & Language */}
                   {phase === 1 && (
                     <div className="flex flex-col sm:flex-row gap-space-lg">
                       <div className="flex flex-col gap-1.5 flex-1">
@@ -534,18 +517,51 @@ export default function CustomCallPage() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pt-2">
+                  {/* Voice Sandbox & Acoustic Engine Micro-Card (Positioned above action bar) */}
+                  <div className="bg-surface-dark rounded-xl px-4 py-3 text-canvas-white shadow-sm border border-surface-dark-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-electric-sky animate-pulse" />
+                        <span className="font-label-caps text-xs uppercase tracking-wider text-surface-variant font-semibold">
+                          Voice Sandbox
+                        </span>
+                      </div>
+                      <span className="hidden sm:inline text-surface-dark-border font-mono-code text-xs">|</span>
+                      <span className="font-mono-code text-xs text-primary-fixed-dim shrink-0">
+                        24kHz Neural Core
+                      </span>
+                    </div>
+
+                    {/* Mini Frequency Waveform Auto Equalizer */}
+                    <div className="h-5 flex items-center gap-1 shrink-0">
+                      {[8, 14, 18, 10, 16, 20, 12, 18, 8, 14, 16, 6].map((h, i) => (
+                        <div
+                          key={i}
+                          className="w-0.5 bg-electric-sky rounded-full animate-pulse"
+                          style={{ height: `${h}px`, animationDelay: `${i * 0.08}s` }}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 font-mono-code text-xs text-surface-variant">
+                      <span>Acoustic Stream:</span>
+                      <span className="text-success-border font-medium">Active</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-2 border-t border-surface-container-low">
                     <span className="font-mono-code text-mono-code text-on-surface-variant">
                       Zero voice anxiety • 100% human approved
                     </span>
                     <button
+                      type="button"
                       onClick={() => callPlan()}
                       disabled={cycle.planning || !cycle.userInput.trim() || !phone.trim()}
-                      className="px-6 py-3 rounded-lg bg-primary text-on-primary font-body-medium text-body-medium font-semibold flex items-center gap-2 hover:bg-brand-mark-blue transition-colors shadow-xs disabled:opacity-50"
+                      className="w-full sm:w-auto px-6 py-3 rounded-lg bg-surface-dark text-canvas-white font-body-medium text-body-medium font-semibold flex items-center justify-center gap-space-sm hover:bg-surface-dark-elevated transition-colors shadow-md disabled:opacity-50"
                     >
                       {cycle.planning ? (
                         <>
-                          <span className="material-symbols-outlined text-[18px] animate-spin">
+                          <span className="material-symbols-outlined text-[18px] text-warning animate-spin">
                             progress_activity
                           </span>
                           <span>CALL-E is planning…</span>
@@ -553,7 +569,9 @@ export default function CustomCallPage() {
                       ) : (
                         <>
                           <span>Plan this call with MCP</span>
-                          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                          <span className="material-symbols-outlined text-[18px] text-electric-sky">
+                            arrow_forward
+                          </span>
                         </>
                       )}
                     </button>
@@ -564,7 +582,7 @@ export default function CustomCallPage() {
 
             {/* ── STEP 2: Clarify ── */}
             {step === "clarify" && cycle.clarifyingQuestion && (
-              <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-xl flex flex-col gap-space-xl">
+              <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-lg flex flex-col gap-space-lg">
                 <div className="flex items-center justify-between pb-space-md border-b border-border-hairline">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-space-sm">
@@ -577,13 +595,8 @@ export default function CustomCallPage() {
                       CALL-E detected missing details needed to complete this call successfully.
                     </p>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium border bg-warning-bg border-warning-border text-warning flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-warning" />
-                    <span>Clarification Needed</span>
-                  </span>
                 </div>
 
-                {/* Q&A Chat bubbles */}
                 <div className="flex flex-col gap-3 py-2">
                   {cycle.qaHistory.map((qa, i) => (
                     <div key={i} className="flex flex-col gap-2">
@@ -598,7 +611,6 @@ export default function CustomCallPage() {
                     </div>
                   ))}
 
-                  {/* Active Question Box */}
                   <ClarifyBox
                     question={cycle.clarifyingQuestion}
                     loading={cycle.planning}
@@ -608,10 +620,9 @@ export default function CustomCallPage() {
               </section>
             )}
 
-            {/* ── STEP 3: Active HITL Review Card ── */}
+            {/* ── STEP 3: Active Review Card ── */}
             {step === "review" && (
-              <section className="bg-surface-container-lowest rounded-xl shadow-md border border-border-hairline p-space-xl flex flex-col gap-space-xl">
-                {/* Card Header */}
+              <section className="bg-surface-container-lowest rounded-xl shadow-md border border-border-hairline p-space-lg flex flex-col gap-space-lg">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pb-space-md border-b border-border-hairline">
                   <div className="flex flex-col gap-space-xs">
                     <div className="flex items-center gap-space-sm">
@@ -624,220 +635,42 @@ export default function CustomCallPage() {
                       CALL-E synthesized your instructions into an exact voice proxy script. Validate every constraint before telephonic initiation.
                     </p>
                   </div>
-                  <div className="flex items-center gap-space-sm shrink-0">
-                    <div className="px-3 py-1 rounded-full text-xs font-medium border bg-warning-bg border-warning-border text-warning flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-warning" />
-                      <span className="font-label-caps text-label-caps uppercase tracking-wider">
-                        Awaiting Your Approval
+                </div>
+
+                <div className="flex flex-col gap-space-lg">
+                  <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-xs shadow-xs border border-border-hairline">
+                    <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                      Destination Telephony Endpoint
+                    </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="font-mono-phone text-mono-phone text-on-surface">
+                        {phone} ({REGIONS.find((r) => r.value === region)?.label ?? region})
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-success-bg text-success-text text-[11px] font-medium border border-success-border">
+                        Verified Tel
                       </span>
                     </div>
+                  </div>
+
+                  <div className="bg-surface-dark rounded-xl p-space-lg flex flex-col gap-space-base relative overflow-hidden shadow-xl border border-surface-dark-border">
+                    <div className="flex items-center justify-between border-b border-surface-dark-border pb-space-sm">
+                      <span className="font-mono-code text-[11px] text-surface-variant uppercase tracking-wider">
+                        telephony_manifest.prompt
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-surface-dark-elevated text-primary-fixed text-[11px] font-mono-code border border-surface-dark-border">
+                        Editable
+                      </span>
+                    </div>
+                    <textarea
+                      rows={8}
+                      value={cycle.finalTask}
+                      onChange={(e) => setActiveCycle((c) => ({ ...c, finalTask: e.target.value }))}
+                      spellCheck={false}
+                      className="w-full bg-surface-dark-elevated text-canvas-white font-mono-code text-mono-code p-space-base rounded-lg border border-surface-dark-border focus:outline-none focus:border-electric-sky focus:ring-1 focus:ring-electric-sky transition-all resize-none leading-relaxed"
+                    />
                   </div>
                 </div>
 
-                {/* Two-Column Review Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl">
-                  {/* Left Column: Structured Parameters */}
-                  <div className="lg:col-span-5 flex flex-col gap-space-lg">
-                    {/* Recipient Tile */}
-                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-xs shadow-xs border border-border-hairline">
-                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
-                        Destination Telephony Endpoint
-                      </span>
-                      <div className="flex items-center justify-between mt-1">
-                        <div className="flex items-center gap-space-sm">
-                          <div className="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
-                            <span className="material-symbols-outlined text-[20px]">call</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-mono-phone text-mono-phone text-on-surface">
-                              {phone}
-                            </span>
-                            <span className="font-body-meta text-body-meta text-on-surface-variant">
-                              {REGIONS.find((r) => r.value === region)?.label ?? region}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 rounded bg-success-bg text-success-text text-[11px] font-medium border border-success-border">
-                          Verified Tel
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Stated Objective */}
-                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-xs shadow-xs border border-border-hairline">
-                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
-                        Primary Call Mission
-                      </span>
-                      <p className="font-body-medium text-body-medium text-on-surface mt-1 leading-snug">
-                        {cycle.userInput}
-                      </p>
-                    </div>
-
-                    {/* Clarified Points */}
-                    {cycle.qaHistory.length > 0 && (
-                      <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-sm shadow-xs border border-border-hairline">
-                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
-                          Clarified before this call
-                        </span>
-                        <ul className="flex flex-col gap-space-sm mt-1">
-                          {cycle.qaHistory.map((qa, i) => (
-                            <li
-                              key={i}
-                              className="flex flex-col gap-0.5 p-2 bg-surface-container-lowest rounded-lg border border-border-hairline"
-                            >
-                              <span className="font-body-medium text-body-medium text-on-surface">
-                                {qa.question}
-                              </span>
-                              <span className="font-mono-code text-mono-code text-on-surface-variant">
-                                {qa.answer}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Guardrails */}
-                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-sm shadow-xs border border-border-hairline">
-                      <div className="flex items-center justify-between">
-                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
-                          Verified Parameters
-                        </span>
-                        <span className="font-mono-code text-[11px] text-success font-medium">
-                          Active Guardrails
-                        </span>
-                      </div>
-                      <ul className="flex flex-col gap-space-sm mt-1">
-                        <li className="flex items-start gap-space-sm p-2 bg-surface-container-lowest rounded-lg border border-border-hairline">
-                          <span className="material-symbols-outlined text-success text-[18px] mt-0.5 shrink-0">
-                            check_circle
-                          </span>
-                          <div className="flex flex-col">
-                            <span className="font-body-medium text-body-medium text-on-surface">
-                              Human-in-the-Loop Locked
-                            </span>
-                            <span className="font-mono-code text-mono-code text-on-surface-variant">
-                              Will not deviate from written script
-                            </span>
-                          </div>
-                        </li>
-                        <li className="flex items-start gap-space-sm p-2 bg-surface-container-lowest rounded-lg border border-border-hairline">
-                          <span className="material-symbols-outlined text-success text-[18px] mt-0.5 shrink-0">
-                            check_circle
-                          </span>
-                          <div className="flex flex-col">
-                            <span className="font-body-medium text-body-medium text-on-surface">
-                              Evidence Ledger
-                            </span>
-                            <span className="font-mono-code text-mono-code text-on-surface-variant">
-                              Captures auditable transcript receipts
-                            </span>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
-
-                    {/* Voice sample (decorative UI only, no call logic) */}
-                    <div className="bg-surface-subtle p-space-base rounded-xl flex flex-col gap-space-sm shadow-xs border border-border-hairline">
-                      <div className="flex items-center justify-between">
-                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
-                          Acoustic Model Synthesis
-                        </span>
-                        <span className="font-mono-code text-[11px] text-primary">
-                          Ultra-Low Latency 24kHz
-                        </span>
-                      </div>
-                      <div className="bg-surface-container-lowest p-space-sm rounded-lg border border-border-hairline flex items-center justify-between">
-                        <div className="flex items-center gap-space-sm">
-                          <button
-                            type="button"
-                            onClick={() => setIsPlayingVoice((v) => !v)}
-                            className="w-9 h-9 rounded-lg bg-surface-dark text-on-primary flex items-center justify-center hover:bg-surface-dark-elevated active:scale-95 transition-transform"
-                            title="Listen to Voice Sample"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">
-                              {isPlayingVoice ? "pause" : "play_arrow"}
-                            </span>
-                          </button>
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <span className="font-body-medium text-body-medium text-on-surface">
-                                Voice: CALL-E Neutral
-                              </span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                            </div>
-                            <span className="font-body-meta text-body-meta text-on-surface-variant">
-                              Calm &amp; Professional Spoken {locale === "ur" ? "Urdu" : "English"}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
-                          graphic_eq
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Editable script */}
-                  <div className="lg:col-span-7 flex flex-col">
-                    <div className="bg-surface-dark rounded-xl p-space-lg flex flex-col gap-space-base h-full relative overflow-hidden shadow-xl border border-surface-dark-border">
-                      <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-primary-glow blur-3xl pointer-events-none" />
-
-                      <div className="flex items-center justify-between border-b border-surface-dark-border pb-space-sm z-10">
-                        <div className="flex items-center gap-space-sm">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-error" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-warning" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-success" />
-                          </div>
-                          <span className="font-mono-code text-[11px] text-outline tracking-wider uppercase ml-2">
-                            telephony_manifest_v2.prompt
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded bg-surface-dark-elevated text-primary-fixed text-[11px] font-mono-code border border-surface-dark-border">
-                          Interactive Buffer
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col gap-space-xs z-10 grow">
-                        <div className="flex items-center justify-between text-outline">
-                          <span className="font-label-caps text-label-caps uppercase tracking-wider text-outline-variant">
-                            System Execution Protocol
-                          </span>
-                          <span className="font-label-caps text-label-caps text-electric-sky flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">edit</span>
-                            Editable • These are the exact instructions CALL-E receives
-                          </span>
-                        </div>
-                        <textarea
-                          rows={8}
-                          value={cycle.finalTask}
-                          onChange={(e) => setActiveCycle((c) => ({ ...c, finalTask: e.target.value }))}
-                          spellCheck={false}
-                          className="w-full bg-surface-dark-elevated text-canvas-white font-mono-code text-mono-code p-space-base rounded-lg border border-surface-dark-border focus:outline-none focus:border-electric-sky focus:ring-1 focus:ring-electric-sky transition-all resize-none leading-relaxed"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] font-mono-code text-outline z-10 pt-1">
-                        <span>Encoding: UTF-8</span>
-                        <span>{cycle.finalTask.length} characters</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Error Banner */}
-                {error && (
-                  <div
-                    role="alert"
-                    className="px-4 py-3 rounded-lg bg-error-bg border border-error-border text-sm text-error-text flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">error</span>
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                {/* Action Control Footer */}
                 <div className="flex flex-col gap-space-base pt-space-md border-t border-border-hairline">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-space-base">
                     <button
@@ -852,24 +685,13 @@ export default function CustomCallPage() {
                       type="button"
                       onClick={placeCall}
                       disabled={!cycle.finalTask.trim() || cycle.placing}
-                      className="w-full sm:w-auto px-6 py-3 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-body-medium text-body-medium font-semibold flex items-center justify-center gap-space-sm shadow-md hover:shadow-lg transition-all group disabled:opacity-50"
+                      className="w-full sm:w-auto px-6 py-3 rounded-lg bg-surface-dark hover:bg-surface-dark-elevated text-canvas-white font-body-medium text-body-medium font-semibold flex items-center justify-center gap-space-sm shadow-md transition-all disabled:opacity-50"
                     >
-                      <span className="material-symbols-outlined text-[20px] group-hover:rotate-12 transition-transform">
+                      <span className="material-symbols-outlined text-[20px] text-electric-sky animate-pulse">
                         phone_in_talk
                       </span>
                       <span>Approve &amp; Place Call →</span>
                     </button>
-                  </div>
-
-                  <p className="font-body-meta text-body-meta text-on-surface-variant text-center">
-                    This places a real phone call to {phone}. It may take 1–5 minutes.
-                  </p>
-
-                  <div className="flex items-center justify-center gap-space-sm py-2 px-3 bg-surface-subtle rounded-lg text-center border border-border-hairline">
-                    <span className="material-symbols-outlined text-success text-[18px]">lock</span>
-                    <p className="font-body-meta text-body-meta text-on-surface-variant">
-                      CALL-E will never share sensitive medical or payment details beyond what is explicitly approved here.
-                    </p>
                   </div>
                 </div>
               </section>
@@ -878,15 +700,10 @@ export default function CustomCallPage() {
             {/* ── STEP 4: Calling In Progress ── */}
             {step === "calling" && (
               <section className="bg-surface-container-lowest rounded-xl shadow-md border border-border-hairline p-space-xl flex flex-col items-center justify-center text-center gap-space-lg py-16">
-                <div className="relative flex items-center justify-center">
-                  {!cycle.timedOut && (
-                    <span className="absolute w-20 h-20 rounded-full bg-primary-subtle animate-ping" />
-                  )}
-                  <div className="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg relative z-10">
-                    <span className="material-symbols-outlined text-[32px] animate-pulse">
-                      phone_in_talk
-                    </span>
-                  </div>
+                <div className="w-16 h-16 rounded-2xl bg-primary-subtle border border-primary-glow flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[32px] text-primary animate-pulse">
+                    phone_in_talk
+                  </span>
                 </div>
 
                 <div className="flex flex-col gap-1 max-w-md">
@@ -896,32 +713,23 @@ export default function CustomCallPage() {
                   <p className="font-body-base text-body-base text-on-surface-variant">
                     {cycle.timedOut
                       ? "This is taking longer than expected. The call may have already completed."
-                      : "Your autonomous voice proxy is conversing with the destination. Factual transcripts and evidence will populate automatically."}
+                      : "Your autonomous voice proxy is conversing with the destination. Transcripts will populate automatically."}
                   </p>
-                  {!cycle.timedOut && (
-                    <p className="font-body-meta text-body-meta text-on-surface-variant">
-                      Please keep this page open.
-                    </p>
-                  )}
                 </div>
 
                 {cycle.timedOut && cycle.callId && (
                   <button
+                    type="button"
                     onClick={() => {
                       setActiveCycle((c) => ({ ...c, placing: true, timedOut: false }));
                       pollCallStatus(cycle.callId!);
                     }}
-                    className="text-sm font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5"
+                    className="text-sm font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5 pt-2"
                   >
                     <span className="material-symbols-outlined text-[18px]">refresh</span>
                     Check status again →
                   </button>
                 )}
-
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary-subtle text-primary text-xs font-mono-code">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span>Real-time speech synthesis active</span>
-                </div>
               </section>
             )}
 
@@ -932,6 +740,7 @@ export default function CustomCallPage() {
 
                 {phase === 1 && (
                   <button
+                    type="button"
                     onClick={proceedToPhase2}
                     className="self-start text-sm font-medium text-primary hover:text-brand-mark-blue transition-colors flex items-center gap-1.5 pt-2"
                   >
@@ -941,6 +750,7 @@ export default function CustomCallPage() {
                 )}
 
                 <button
+                  type="button"
                   onClick={startOver}
                   className="self-start text-sm text-on-surface-variant hover:text-on-surface underline underline-offset-2 flex items-center gap-1.5"
                 >
@@ -950,7 +760,7 @@ export default function CustomCallPage() {
               </section>
             )}
 
-            {/* Global error (only shown when review step isn't already displaying its own banner) */}
+            {/* Global Error Banner */}
             {error && step !== "review" && (
               <div
                 role="alert"
@@ -961,7 +771,7 @@ export default function CustomCallPage() {
               </div>
             )}
 
-            {/* Contextual Telephony Telemetry Cards */}
+            {/* Telemetry Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-space-base">
               <div className="bg-surface-container-lowest p-space-base rounded-xl shadow-xs border border-border-hairline flex items-center gap-space-base">
                 <div className="w-10 h-10 rounded-lg bg-primary-subtle text-primary flex items-center justify-center shrink-0">
@@ -1005,6 +815,7 @@ export default function CustomCallPage() {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </main>
@@ -1029,8 +840,6 @@ export default function CustomCallPage() {
     </div>
   );
 }
-
-// ── Local sub-component for the clarify input (UI-only; calls back into callPlan) ──
 
 function ClarifyBox({
   question,
@@ -1070,7 +879,7 @@ function ClarifyBox({
         <button
           type="submit"
           disabled={loading || !val.trim()}
-          className="px-5 py-2.5 rounded-lg bg-primary text-on-primary font-body-medium font-semibold hover:bg-brand-mark-blue transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50"
+          className="px-5 py-2.5 rounded-lg bg-surface-dark text-canvas-white font-body-medium font-semibold hover:bg-surface-dark-elevated transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50"
         >
           {loading ? "Saving…" : "Submit →"}
         </button>

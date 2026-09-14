@@ -106,12 +106,12 @@ export default function VendorComparisonPage() {
 
   async function pollStatus(id: string) {
     const POLL_INTERVAL_MS = 5000;
-    const MAX_ATTEMPTS = 96; // ~8 minutes — several vendors are being called
+    const MAX_ATTEMPTS = 96; // ~8 minutes
 
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
       try {
-        const res = await fetch(`/api/call-e/call-status?id=${id}`);
+        const res = await fetch(`/api/calle/call-status?id=${id}`);
         const data = await res.json();
 
         if (!res.ok) {
@@ -156,10 +156,16 @@ export default function VendorComparisonPage() {
       <Nav />
       <main className="w-full pt-16 bg-surface min-h-screen">
         <div className="max-w-4xl mx-auto w-full px-margin py-space-xl flex flex-col gap-space-xl">
+          {/* Header Card */}
           <div className="flex flex-col gap-1">
-            <h1 className="font-page-header text-page-header text-on-surface tracking-tight">
-              Compare Vendors
-            </h1>
+            <div className="flex items-center gap-space-sm">
+              <h1 className="font-page-header text-page-header text-on-surface tracking-tight">
+                Compare Vendors
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full font-label-caps text-label-caps uppercase bg-primary-subtle text-primary font-semibold">
+                Parallel Dialing
+              </span>
+            </div>
             <p className="font-body-base text-body-base text-on-surface-variant">
               CALL-E calls each vendor in parallel, asks the same questions, and picks the best fit.
             </p>
@@ -167,35 +173,38 @@ export default function VendorComparisonPage() {
 
           {phase === "compose" && (
             <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-xl flex flex-col gap-space-xl">
+              {/* Step 01: Job Description */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
-                  What job do you need done?
+                <label className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                  01. What job do you need done?
                 </label>
                 <textarea
                   rows={3}
                   value={service}
                   onChange={(e) => setService(e.target.value)}
                   placeholder="e.g. Fixing a leaking kitchen faucet"
-                  className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none resize-y"
+                  className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest resize-y"
                 />
               </div>
 
+              {/* Step 02: Preferred Timing */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
-                  Preferred timing (optional)
+                <label className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                  02. Preferred timing (optional)
                 </label>
                 <input
                   type="text"
                   value={preferredTiming}
                   onChange={(e) => setPreferredTiming(e.target.value)}
                   placeholder="e.g. This week, weekday afternoons"
-                  className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none"
+                  className="w-full bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline shadow-xs focus:outline-none focus:bg-surface-container-lowest"
                 />
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
-                  What should CALL-E ask every vendor?
+              {/* Step 03: Questions to Ask */}
+              <div className="flex flex-col gap-space-sm">
+                <label className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                  03. What should CALL-E ask every vendor?
                 </label>
                 {fieldsToAsk.map((f, i) => (
                   <div key={i} className="flex gap-2">
@@ -204,29 +213,32 @@ export default function VendorComparisonPage() {
                       value={f}
                       onChange={(e) => updateField(i, e.target.value)}
                       placeholder="e.g. Price"
-                      className="flex-1 bg-surface-subtle rounded-lg px-3.5 py-2 font-body-base text-body-base border border-border-hairline focus:outline-none"
+                      className="flex-1 bg-surface-subtle rounded-lg px-3.5 py-2.5 font-body-base text-body-base text-on-surface border border-border-hairline focus:outline-none focus:bg-surface-container-lowest"
                     />
                     <button
+                      type="button"
                       onClick={() => removeField(i)}
                       disabled={fieldsToAsk.length <= 1}
-                      className="px-3 rounded-lg border border-border-hairline text-on-surface-variant hover:text-error disabled:opacity-40"
+                      className="px-3 rounded-lg border border-border-hairline text-on-surface-variant hover:text-error disabled:opacity-40 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                   </div>
                 ))}
                 <button
+                  type="button"
                   onClick={addField}
-                  className="self-start text-sm font-medium text-primary hover:text-brand-mark-blue flex items-center gap-1"
+                  className="self-start text-sm font-medium text-primary hover:text-brand-mark-blue flex items-center gap-1 pt-1"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   Add a question
                 </button>
               </div>
 
-              <div className="flex flex-col gap-space-base">
-                <label className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
-                  Vendors to call (at least 2)
+              {/* Step 04: Vendors List */}
+              <div className="flex flex-col gap-space-md">
+                <label className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">
+                  04. Vendors to call (at least 2)
                 </label>
                 {vendors.map((v, i) => (
                   <div
@@ -238,9 +250,10 @@ export default function VendorComparisonPage() {
                         Vendor {i + 1}
                       </span>
                       <button
+                        type="button"
                         onClick={() => removeVendor(i)}
                         disabled={vendors.length <= 2}
-                        className="text-on-surface-variant hover:text-error disabled:opacity-40"
+                        className="text-on-surface-variant hover:text-error disabled:opacity-40 transition-colors"
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
@@ -250,7 +263,7 @@ export default function VendorComparisonPage() {
                       value={v.businessName}
                       onChange={(e) => updateVendor(i, { businessName: e.target.value })}
                       placeholder="Business name"
-                      className="w-full bg-surface-container-lowest rounded-lg px-3.5 py-2 font-body-base text-body-base border border-border-hairline focus:outline-none"
+                      className="w-full bg-surface-container-lowest rounded-lg px-3.5 py-2.5 font-body-base text-body-base border border-border-hairline focus:outline-none"
                     />
                     <PhoneInput
                       phone={v.phone}
@@ -260,8 +273,9 @@ export default function VendorComparisonPage() {
                   </div>
                 ))}
                 <button
+                  type="button"
                   onClick={addVendor}
-                  className="self-start text-sm font-medium text-primary hover:text-brand-mark-blue flex items-center gap-1"
+                  className="self-start text-sm font-medium text-primary hover:text-brand-mark-blue flex items-center gap-1 pt-1"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   Add another vendor
@@ -275,21 +289,69 @@ export default function VendorComparisonPage() {
                 </div>
               )}
 
+              {/* Voice Sandbox & Acoustic Engine Micro-Card (Positioned above submit button) */}
+              <div className="bg-surface-dark rounded-xl px-4 py-3 text-canvas-white shadow-sm border border-surface-dark-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-electric-sky animate-pulse" />
+                    <span className="font-label-caps text-xs uppercase tracking-wider text-surface-variant font-semibold">
+                      Voice Sandbox
+                    </span>
+                  </div>
+                  <span className="hidden sm:inline text-surface-dark-border font-mono-code text-xs">|</span>
+                  <span className="font-mono-code text-xs text-primary-fixed-dim shrink-0">
+                    24kHz Neural Core
+                  </span>
+                </div>
+
+                {/* Mini Frequency Waveform Auto Equalizer */}
+                <div className="h-5 flex items-center gap-1 shrink-0">
+                  {[8, 14, 18, 10, 16, 20, 12, 18, 8, 14, 16, 6].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-0.5 bg-electric-sky rounded-full animate-pulse"
+                      style={{ height: `${h}px`, animationDelay: `${i * 0.08}s` }}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 font-mono-code text-xs text-surface-variant">
+                  <span>Acoustic Stream:</span>
+                  <span className="text-success-border font-medium">Active</span>
+                </div>
+              </div>
+
               <button
+                type="button"
                 onClick={submit}
                 disabled={!canSubmit || submitting}
-                className="self-end px-6 py-3 rounded-lg bg-primary text-on-primary font-body-medium text-body-medium font-semibold hover:bg-brand-mark-blue transition-colors shadow-xs disabled:opacity-50 flex items-center gap-2"
+                className="self-end px-6 py-3 rounded-lg bg-surface-dark text-canvas-white font-body-medium text-body-medium font-semibold hover:bg-surface-dark-elevated transition-colors shadow-md disabled:opacity-50 flex items-center gap-2"
               >
-                <span className="material-symbols-outlined text-[18px]">call_split</span>
-                Call all vendors
+                {submitting ? (
+                  <>
+                    <span className="material-symbols-outlined text-[18px] text-warning animate-spin">
+                      progress_activity
+                    </span>
+                    <span>Calling Vendors...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px] text-electric-sky animate-pulse">
+                      call_split
+                    </span>
+                    <span>Call All Vendors</span>
+                  </>
+                )}
               </button>
             </section>
           )}
 
           {phase === "calling" && (
             <section className="bg-surface-container-lowest rounded-xl shadow-md border border-border-hairline p-space-xl flex flex-col items-center justify-center text-center gap-space-lg py-16">
-              <div className="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg">
-                <span className="material-symbols-outlined text-[32px] animate-pulse">call_split</span>
+              <div className="w-16 h-16 rounded-2xl bg-primary-subtle border border-primary-glow flex items-center justify-center">
+                <span className="material-symbols-outlined text-[32px] text-primary animate-pulse">
+                  call_split
+                </span>
               </div>
               <div className="flex flex-col gap-1 max-w-md">
                 <h2 className="font-section-header text-section-header text-on-surface">
@@ -297,18 +359,19 @@ export default function VendorComparisonPage() {
                 </h2>
                 <p className="font-body-base text-body-base text-on-surface-variant">
                   {timedOut
-                    ? "This is taking longer than expected — you can check again below."
-                    : "CALL-E is speaking with each vendor and will compare their answers once every call is done."}
+                    ? "This is taking longer than expected — you can check status again below."
+                    : "CALL-E is speaking with each vendor in parallel and will compare their answers once every call completes."}
                 </p>
               </div>
               {timedOut && callId && (
                 <button
+                  type="button"
                   onClick={() => {
                     setTimedOut(false);
                     setSubmitting(true);
                     pollStatus(callId);
                   }}
-                  className="text-sm font-medium text-primary hover:text-brand-mark-blue flex items-center gap-1.5"
+                  className="text-sm font-medium text-primary hover:text-brand-mark-blue flex items-center gap-1.5 pt-2"
                 >
                   <span className="material-symbols-outlined text-[18px]">refresh</span>
                   Check status again →
@@ -326,7 +389,7 @@ export default function VendorComparisonPage() {
             <section className="flex flex-col gap-space-lg">
               <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-hairline p-space-xl flex flex-col gap-space-sm">
                 <span className="font-label-caps text-label-caps uppercase text-primary font-semibold">
-                  Recommended
+                  Recommended Option
                 </span>
                 <h2 className="font-section-header text-section-header text-on-surface">
                   {result.comparison?.winner ?? "No clear winner"}
@@ -382,6 +445,7 @@ export default function VendorComparisonPage() {
               </div>
 
               <button
+                type="button"
                 onClick={startOver}
                 className="self-start text-sm text-on-surface-variant hover:text-on-surface underline underline-offset-2 flex items-center gap-1.5"
               >
@@ -390,8 +454,28 @@ export default function VendorComparisonPage() {
               </button>
             </section>
           )}
+
+
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="w-full bg-surface-container-lowest border-t border-border-hairline py-space-xl mt-auto">
+        <div className="max-w-5xl mx-auto px-margin flex flex-col sm:flex-row items-center justify-between gap-space-base">
+          <div className="flex items-center gap-space-sm">
+            <span className="font-card-title text-card-title text-on-surface">Your Voice</span>
+            <span className="font-body-meta text-body-meta text-on-surface-variant">
+              — Autonomous Voice Proxy for Accessibility
+            </span>
+          </div>
+          <div className="flex items-center gap-space-lg font-body-meta text-body-meta text-on-surface-variant">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-success" /> Telephony Node Active
+            </span>
+            <span>© 2025 Your Voice Systems</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

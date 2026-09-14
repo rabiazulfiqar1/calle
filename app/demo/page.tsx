@@ -247,6 +247,7 @@ type Phase = "idle" | "calling" | "result";
 export default function DemoPage() {
   const [selectedId, setSelectedId] = useState(SCENARIOS[0].id);
   const [phase, setPhase] = useState<Phase>("idle");
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
 
   const scenario = SCENARIOS.find((s) => s.id === selectedId)!;
 
@@ -295,7 +296,7 @@ export default function DemoPage() {
 
             {/* Dual Pane Interface */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
-              {/* LEFT SIDEBAR: Scenario Catalog Switcher */}
+              {/* LEFT SIDEBAR: Scenario Catalog Switcher & Voice Sandbox */}
               <aside className="lg:col-span-4 flex flex-col gap-space-lg">
                 <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-hairline">
                   <div className="flex items-center justify-between pb-space-md mb-space-sm border-b border-surface-container-low">
@@ -371,22 +372,23 @@ export default function DemoPage() {
                   </div>
                 </div>
 
-                {/* Telephony Visualizer Micro-Card */}
-                <div className="bg-surface-dark rounded-xl p-space-lg text-canvas-white shadow-md relative overflow-hidden">
-                  <div className="flex items-center justify-between mb-space-md">
+                {/* Voice Sandbox & Telephony Visualizer Micro-Card */}
+                <div className="bg-surface-dark rounded-xl p-space-lg text-canvas-white shadow-md relative overflow-hidden flex flex-col gap-space-md">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-electric-sky" />
+                      <span className="w-2 h-2 rounded-full bg-electric-sky animate-pulse" />
                       <span className="font-label-caps text-label-caps uppercase tracking-wider text-surface-variant">
-                        Simulation Engine
+                        Voice Sandbox &amp; Acoustic Engine
                       </span>
                     </div>
                     <span className="font-mono-code text-mono-code text-primary-fixed-dim">
-                      CALL-E Sandbox
+                      24kHz Neural Core
                     </span>
                   </div>
-                  {/* Frequency Bars */}
+
+                  {/* Frequency Waveform Auto Equalizer */}
                   <div className="h-10 flex items-center justify-between gap-1 px-1">
-                    {[12, 24, 32, 16, 28, 36, 20, 32, 12, 24, 28, 8].map((h, i) => (
+                    {[12, 24, 32, 16, 28, 36, 20, 32, 12, 24, 28, 8, 20, 32, 16, 24].map((h, i) => (
                       <div
                         key={i}
                         className="w-1 bg-electric-sky rounded-full animate-pulse"
@@ -394,7 +396,8 @@ export default function DemoPage() {
                       />
                     ))}
                   </div>
-                  <div className="mt-space-sm pt-space-sm flex items-center justify-between text-surface-variant font-mono-code text-mono-code border-t border-surface-dark-border">
+
+                  <div className="pt-space-xs flex items-center justify-between text-surface-variant font-mono-code text-mono-code border-t border-surface-dark-border">
                     <span>Acoustic Stream</span>
                     <span className="text-success-border font-medium">Active</span>
                   </div>
@@ -776,9 +779,14 @@ function CompareVendorsScenario({ onStatusChange }: { onStatusChange: (s: Phase)
                   key={i}
                   className="p-space-md rounded-lg border border-border-hairline bg-surface-subtle flex flex-col gap-space-xs"
                 >
-                  <span className="font-card-title text-card-title text-on-surface">
-                    Vendor {i + 1}
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-card-title text-card-title text-on-surface">
+                      Vendor {i + 1}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono-code bg-surface-container-high text-on-surface-variant">
+                      Parallel Queue
+                    </span>
+                  </div>
                   <input type="text" readOnly value={v.businessName} className={inputCls} />
                   <input type="text" readOnly value={v.phone} className={inputCls} />
                 </div>
